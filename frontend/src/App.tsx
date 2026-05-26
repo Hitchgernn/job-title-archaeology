@@ -1,0 +1,370 @@
+import { useEffect, useMemo, useState } from 'react'
+import './App.css'
+import { fetchArchiveDossier, fetchArchiveTitles } from './api'
+import jobMarketImage from './assets/archive-images/job-market-1.png'
+import type { AdoptionPoint, ArchiveRecord, ArchiveResponse, DossierResponse, EraDensity, SectorDensity } from './types'
+
+const EDITION = 'Vol. 1 · Issue 47'
+const PAGE_SIZE = 3
+const TODAY = new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())
+
+type View = { name: 'archive' } | { name: 'dossier'; recordId: string }
+
+function viewFromHash(): View {
+  const match = window.location.hash.match(/^#\/titles\/(.+)$/)
+  return match ? { name: 'dossier', recordId: decodeURIComponent(match[1]) } : { name: 'archive' }
+}
+
+function archivePageFromHash() {
+  const match = window.location.hash.match(/^#\/\?page=(\d+)$/)
+  return match ? Math.max(Number(match[1]) - 1, 0) : 0
+}
+
+function pushArchivePage(page: number) {
+  window.location.hash = page === 0 ? '#/' : `#/?page=${page + 1}`
+}
+
+function pushView(view: View) {
+  const hash = view.name === 'dossier' ? `#/titles/${encodeURIComponent(view.recordId)}` : '#/'
+  window.location.hash = hash
+}
+
+function Masthead({ onArchive }: { onArchive: () => void }) {
+  return (
+    <header className="masthead">
+      <div className="masthead-top">
+        <span>{TODAY}</span>
+        <button type="button" onClick={onArchive}>JOB TITLE ARCHAEOLOGY</button>
+        <span>{EDITION}</span>
+      </div>
+      <nav className="section-nav" aria-label="Archive sections">
+        {['TECH', 'FINANCE', 'HEALTHCARE', 'MANUFACTURING', 'PUBLIC SECTOR'].map((section) => (
+          <span key={section}>{section}</span>
+        ))}
+        <strong>SEARCH THE ARCHIVE</strong>
+      </nav>
+    </header>
+  )
+}
+
+function Footer() {
+  return (
+    <footer className="archive-footer">
+      <div>
+        <h2>JOB TITLE ARCHAEOLOGY</h2>
+        <p>Archival data subject to historical revision. Built from demo labor-market signals.</p>
+      </div>
+      <div className="footer-links">
+        <span>The Archive</span>
+        <span>Methodology</span>
+        <span>Permissions</span>
+        <span>Contact</span>
+      </div>
+    </footer>
+  )
+}
+
+function StatePanel({ children }: { children: React.ReactNode }) {
+  return <section className="state-panel">{children}</section>
+}
+
+function ArchiveResult({ record, onOpen }: { record: ArchiveRecord; onOpen: (recordId: string) => void }) {
+  return (
+    <article className="archive-result">
+      <div className="result-meta">
+        <span>Cat. {record.category}</span>
+        <span>REC_ID: {record.record_id}</span>
+      </div>
+      <button type="button" onClick={() => onOpen(record.record_id)}>
+        {record.title}
+      </button>
+      <p>{record.excerpt}</p>
+      <div className="result-facts">
+        <div>
+          <span>First Seen</span>
+          {record.first_seen_label}
+        </div>
+        <div>
+          <span>Velocity</span>
+          {record.velocity_label}
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function ArchiveSidebar({ densities }: { densities: EraDensity[] }) {
+  return (
+    <aside className="archive-sidebar">
+      <h3>Archival Context</h3>
+      <div className="archive-plate">
+        <img src={jobMarketImage} alt="Black-and-white job market newspaper clipping" />
+      </div>
+      <blockquote>
+        “The labor market is a palimpsest; new titles are written over the fading ink of old operating models.”
+      </blockquote>
+      <p className="sidebar-attribution">— Dr. Aris Thorne, Chief Historian</p>
+      <section className="sidebar-ledger" aria-label="Archive evidence summary">
+        <div>
+          <span>Source Class</span>
+          <strong>Hiring Pages</strong>
+        </div>
+        <div>
+          <span>Signal Cadence</span>
+          <strong>Weekly</strong>
+        </div>
+        <div>
+          <span>Archive Mode</span>
+          <strong>Demo Corpus</strong>
+        </div>
+      </section>
+      <section className="density-panel">
+        <h4>Historical Frequency</h4>
+        <ul>
+          {densities.map((item) => (
+            <li key={item.label}>
+              <span>{item.label}</span>
+              <i />
+              <strong>{item.percentage}% Density</strong>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <button className="export-button" type="button">Export Search Data (.CSV)</button>
+    </aside>
+  )
+}
+
+function ArchivePage({ data, onOpen }: { data: ArchiveResponse; onOpen: (recordId: string) => void }) {
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState('ALL')
+  const [page, setPage] = useState(() => archivePageFromHash())
+  const categories = ['ALL', ...Object.keys(data.summary.category_counts)]
+  const filtered = data.records.filter((record) => {
+    const text = `${record.title} ${record.category} ${record.early_mover_companies.join(' ')}`.toLowerCase()
+    const matchesQuery = text.includes(query.toLowerCase())
+    const matchesCategory = category === 'ALL' || record.category === category
+    return matchesQuery && matchesCategory
+  })
+  const pageCount = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1)
+  const currentPage = Math.min(page, pageCount - 1)
+  const visibleRecords = filtered.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE)
+  const emptySlots = Array.from({ length: PAGE_SIZE - visibleRecords.length }, (_, index) => index)
+
+  useEffect(() => {
+    const syncPage = () => setPage(archivePageFromHash())
+    window.addEventListener('hashchange', syncPage)
+    return () => window.removeEventListener('hashchange', syncPage)
+  }, [])
+
+  return (
+    <>
+      <section className="search-hero">
+        <span>Archival Query</span>
+        <label>
+          <input
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value)
+              pushArchivePage(0)
+            }}
+            placeholder="Search the Archive"
+          />
+          <b aria-hidden="true">→</b>
+        </label>
+      </section>
+
+      <section className="filter-strip" aria-label="Archive filters">
+        <div>
+          {categories.map((item) => (
+            <button
+              className={item === category ? 'active' : ''}
+              key={item}
+              type="button"
+              onClick={() => {
+                setCategory(item)
+                pushArchivePage(0)
+              }}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <p>Showing {filtered.length} Historical Records</p>
+      </section>
+
+      <section className="archive-layout">
+        <div className="results-column">
+          {filtered.length === 0 ? (
+            <StatePanel>No records found in this edition.</StatePanel>
+          ) : (
+            <>
+              {visibleRecords.map((record) => <ArchiveResult key={record.record_id} record={record} onOpen={onOpen} />)}
+              {emptySlots.map((slot) => <div className="archive-result archive-result-placeholder" key={`empty-${slot}`} aria-hidden="true" />)}
+              <nav className="archive-pagination" aria-label="Archive pagination">
+                <button type="button" onClick={() => pushArchivePage(Math.max(currentPage - 1, 0))} disabled={currentPage === 0}>
+                  ‹ Newer Records
+                </button>
+                <span>Archive Page {String(currentPage + 1).padStart(2, '0')} / {String(pageCount).padStart(2, '0')}</span>
+                <button type="button" onClick={() => pushArchivePage(Math.min(currentPage + 1, pageCount - 1))} disabled={currentPage === pageCount - 1}>
+                  Older Records ›
+                </button>
+              </nav>
+            </>
+          )}
+        </div>
+        <ArchiveSidebar densities={data.summary.era_density} />
+      </section>
+    </>
+  )
+}
+
+function AdoptionChart({ points }: { points: AdoptionPoint[] }) {
+  const maxValue = Math.max(...points.map((point) => point.value), 1)
+  const coordinates = points.map((point, index) => {
+    const x = points.length === 1 ? 100 : (index / (points.length - 1)) * 100
+    const y = 100 - (point.value / maxValue) * 88
+    return { ...point, x, y }
+  })
+  const path = coordinates.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+
+  return (
+    <section className="chart-panel">
+      <h3>Fig 1.0: Adoption Velocity Index</h3>
+      <div className="line-chart">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Adoption velocity line chart">
+          <path d={path} />
+          {coordinates.map((point) => (
+            <circle key={point.label} cx={point.x} cy={point.y} r="1.6" />
+          ))}
+        </svg>
+        {coordinates.map((point) =>
+          point.annotation ? (
+            <span className="chart-note" key={point.label} style={{ left: `${point.x}%`, top: `${point.y}%` }}>
+              {point.annotation}
+            </span>
+          ) : null,
+        )}
+        <div className="axis start">{points[0]?.label}</div>
+        <div className="axis end">{points[points.length - 1]?.label}</div>
+      </div>
+    </section>
+  )
+}
+
+function SectorDensity({ sectors }: { sectors: SectorDensity[] }) {
+  return (
+    <section className="sector-panel">
+      <h3>Fig 1.1: Sector Density Analysis</h3>
+      {sectors.map((sector) => (
+        <div className="sector-row" key={sector.sector}>
+          <div>
+            <span>{sector.sector}</span>
+            <strong>{sector.percentage}%</strong>
+          </div>
+          <i><b style={{ width: `${sector.percentage}%` }} /></i>
+        </div>
+      ))}
+      <div className="verified-stamp">Verified Archival Entry</div>
+    </section>
+  )
+}
+
+function DossierPage({ dossier, onArchive }: { dossier: DossierResponse; onArchive: () => void }) {
+  return (
+    <>
+      <button className="back-link" type="button" onClick={onArchive}>← Back to archive</button>
+      <section className="dossier-hero">
+        <article>
+          <span>Editorial Feature</span>
+          <h2>{dossier.title}</h2>
+          <p className="subheadline">{dossier.subheadline}</p>
+          <div className="feature-grid">
+            <p>{dossier.lead_paragraph}</p>
+            <blockquote>“{dossier.pull_quote}”</blockquote>
+          </div>
+        </article>
+        <aside>
+          <h3>Early Adopters Timeline</h3>
+          <ul>
+            {dossier.early_adopters.map((adopter) => (
+              <li key={`${adopter.company}-${adopter.date_label}`}>
+                <span>{adopter.date_label}</span>
+                <strong>{adopter.company}</strong>
+                <em>{adopter.location_label}</em>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      </section>
+
+      <section className="dossier-data">
+        <AdoptionChart points={dossier.adoption_points} />
+        <SectorDensity sectors={dossier.sector_density} />
+      </section>
+
+      <section className="detail-grid">
+        <article>
+          <h3>Preceding Titles</h3>
+          <p>{dossier.preceding_titles.join(', ')}</p>
+          <span>Data integrity verified by methodology group 7.</span>
+        </article>
+        <article>
+          <h3>Required Competencies</h3>
+          <ul>
+            {dossier.competencies.map((competency) => <li key={competency}>{competency}</li>)}
+          </ul>
+        </article>
+        <article>
+          <h3>The 12-Month Outlook</h3>
+          <p>{dossier.outlook}</p>
+        </article>
+      </section>
+    </>
+  )
+}
+
+export default function App() {
+  const [archive, setArchive] = useState<ArchiveResponse | null>(null)
+  const [dossier, setDossier] = useState<DossierResponse | null>(null)
+  const [view, setView] = useState<View>(() => viewFromHash())
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const syncView = () => setView(viewFromHash())
+    window.addEventListener('hashchange', syncView)
+    return () => window.removeEventListener('hashchange', syncView)
+  }, [])
+
+  useEffect(() => {
+    fetchArchiveTitles(10)
+      .then(setArchive)
+      .catch((err: Error) => setError(err.message))
+  }, [])
+
+  useEffect(() => {
+    if (view.name !== 'dossier') return
+    setDossier(null)
+    fetchArchiveDossier(view.recordId, 10)
+      .then(setDossier)
+      .catch((err: Error) => setError(err.message))
+  }, [view])
+
+  const currentView = useMemo(() => {
+    if (error) return <StatePanel>Archive feed interrupted · {error}</StatePanel>
+    if (!archive) return <StatePanel>Opening archive...</StatePanel>
+    if (view.name === 'dossier') {
+      if (!dossier) return <StatePanel>Retrieving dossier...</StatePanel>
+      return <DossierPage dossier={dossier} onArchive={() => pushView({ name: 'archive' })} />
+    }
+    return <ArchivePage data={archive} onOpen={(recordId) => pushView({ name: 'dossier', recordId })} />
+  }, [archive, dossier, error, view])
+
+  return (
+    <main className="archive-shell">
+      <Masthead onArchive={() => pushView({ name: 'archive' })} />
+      {currentView}
+      <Footer />
+    </main>
+  )
+}

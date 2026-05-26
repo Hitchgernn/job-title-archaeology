@@ -1,0 +1,16 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+data/raw/
+COMMIT_CONVENTION.md
+frontend/node_modules/
+frontend/dist/
+job_title_archaeology.db
+job_title_archaeology.db-*
+debug_dashboard.py
+.superpowers/
+configs
+docs
+test.html
