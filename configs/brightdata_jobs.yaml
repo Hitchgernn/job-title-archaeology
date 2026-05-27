@@ -1,0 +1,30 @@
+brightdata:
+  base_url: https://api.brightdata.com
+  dataset_id: replace-with-brightdata-dataset-or-scraper-id
+
+collection:
+  output_dir: data/raw
+  target_records: 50
+  poll_delay_seconds: 5
+  max_poll_attempts: 60
+  keywords:
+    - AI Workflow Architect
+    - Agent Operations Lead
+    - LLM Reliability Engineer
+    - Climate Risk Modeler
+    - Digital Asset Compliance Lead
+    - Clinical AI Safety Officer
+    - Virtual Care Operations Manager
+    - Robotics Fleet Coordinator
+    - Supply Chain Resilience Planner
+    - Algorithmic Accountability Officer
+  locations:
+    - United States
+    - United Kingdom
+    - Singapore
+  industries:
+    - Technology
+    - Finance
+    - Healthcare
+    - Manufacturing
+    - Public Sector

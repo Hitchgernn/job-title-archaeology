@@ -11,6 +11,7 @@ job_title_archaeology.db
 job_title_archaeology.db-*
 debug_dashboard.py
 .superpowers/
-configs
+configs/*
+!configs/brightdata_jobs.yaml
 docs
 test.html

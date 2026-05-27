@@ -43,6 +43,15 @@ collection:
     assert config.collection.industries == ["Technology"]
 
 
+def test_load_brightdata_jobs_config() -> None:
+    config = load_collection_config(Path("configs/brightdata_jobs.yaml"))
+
+    assert config.collection.target_records == 50
+    assert "AI Workflow Architect" in config.collection.keywords
+    assert "Clinical AI Safety Officer" in config.collection.keywords
+    assert "Robotics Fleet Coordinator" in config.collection.keywords
+
+
 def test_collection_config_rejects_empty_keywords() -> None:
     with pytest.raises(ValidationError):
         CollectionConfig.model_validate(
