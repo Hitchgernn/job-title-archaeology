@@ -25,7 +25,7 @@ def test_archive_titles_returns_records() -> None:
     connection = MagicMock()
     with patch("backend.archive.router.open_connection", return_value=connection), patch(
         "backend.archive.router.run_trend_scoring", return_value=[make_trend()]
-    ):
+    ), patch("backend.archive.router.fetch_cached_metadata", return_value={}):
         response = client.get("/archive/titles?limit=5")
 
     assert response.status_code == 200
@@ -50,7 +50,7 @@ def test_archive_dossier_returns_selected_record() -> None:
     connection = MagicMock()
     with patch("backend.archive.router.open_connection", return_value=connection), patch(
         "backend.archive.router.run_trend_scoring", return_value=[make_trend(), make_trend("Agent Operations Lead")]
-    ):
+    ), patch("backend.archive.router.fetch_cached_metadata", return_value={}):
         response = client.get("/archive/titles/JTA-0002-AGENT-OPERATIONS-LEAD?limit=5")
 
     assert response.status_code == 200
@@ -64,7 +64,7 @@ def test_archive_dossier_returns_404_for_unknown_record() -> None:
     connection = MagicMock()
     with patch("backend.archive.router.open_connection", return_value=connection), patch(
         "backend.archive.router.run_trend_scoring", return_value=[make_trend()]
-    ):
+    ), patch("backend.archive.router.fetch_cached_metadata", return_value={}):
         response = client.get("/archive/titles/JTA-9999-NOPE?limit=5")
 
     assert response.status_code == 404

@@ -1,5 +1,18 @@
 from backend.archive.enrichment import build_dossier_metadata, build_record_metadata, stable_record_id
+from backend.archive.models import ArchiveEditorialMetadata
 from backend.trends.models import TrendResult, TrendScores
+
+
+def make_metadata() -> ArchiveEditorialMetadata:
+    return ArchiveEditorialMetadata(
+        category="Tech / LLM",
+        sector="Technology",
+        lead_paragraph="Generated metadata reframes this role around live hiring evidence, operating pressure, and visible adoption patterns from the Bright Data corpus instead of relying on a curated fallback paragraph.",
+        pull_quote="Generated archive language follows the evidence instead of fixed copy.",
+        preceding_titles=["Solutions Architect", "AI Engineer", "Platform Lead"],
+        competencies=["System design", "AI integration", "Governance review", "Stakeholder translation"],
+        outlook="Expect adoption to widen where teams need clear ownership of AI implementation, evaluation, and cross-functional delivery standards.",
+    )
 
 
 def make_trend(title: str = "AI Workflow Architect") -> TrendResult:
@@ -81,3 +94,18 @@ def test_build_dossier_response_finds_record_by_id() -> None:
 
 def test_build_dossier_response_returns_none_for_unknown_id() -> None:
     assert build_dossier_response([make_trend()], "JTA-9999-NOPE") is None
+
+
+def test_build_archive_response_uses_cached_metadata() -> None:
+    response = build_archive_response([make_trend()], {10: make_metadata()})
+
+    assert response.records[0].category == "Tech / LLM"
+    assert "Generated metadata" in response.records[0].excerpt
+
+
+def test_build_dossier_response_uses_cached_metadata() -> None:
+    dossier = build_dossier_response([make_trend()], "JTA-0001-AI-WORKFLOW-ARCHITECT", {10: make_metadata()})
+
+    assert dossier is not None
+    assert dossier.category == "Tech / LLM"
+    assert dossier.preceding_titles == ["Solutions Architect", "AI Engineer", "Platform Lead"]

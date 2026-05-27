@@ -43,6 +43,21 @@ CREATE TABLE IF NOT EXISTS job_posting_titles (
 )
 """
 
+POSTGRES_ARCHIVE_METADATA_CACHE_SQL = """
+CREATE TABLE IF NOT EXISTS archive_metadata_cache (
+    id BIGSERIAL PRIMARY KEY,
+    normalized_title_id BIGINT NOT NULL REFERENCES normalized_titles(id) ON DELETE CASCADE,
+    prompt_version TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    model TEXT NOT NULL,
+    input_hash TEXT NOT NULL,
+    metadata JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(normalized_title_id, prompt_version)
+)
+"""
+
 SQLITE_RAW_JOB_POSTINGS_SQL = """
 CREATE TABLE IF NOT EXISTS raw_job_postings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,6 +103,21 @@ CREATE TABLE IF NOT EXISTS job_posting_titles (
 )
 """
 
+SQLITE_ARCHIVE_METADATA_CACHE_SQL = """
+CREATE TABLE IF NOT EXISTS archive_metadata_cache (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    normalized_title_id INTEGER NOT NULL REFERENCES normalized_titles(id) ON DELETE CASCADE,
+    prompt_version TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    model TEXT NOT NULL,
+    input_hash TEXT NOT NULL,
+    metadata TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(normalized_title_id, prompt_version)
+)
+"""
+
 INDEX_SQL = [
     "CREATE INDEX IF NOT EXISTS idx_raw_job_postings_source_run_id ON raw_job_postings(source_run_id)",
     "CREATE INDEX IF NOT EXISTS idx_raw_job_postings_scraped_at ON raw_job_postings(scraped_at)",
@@ -101,9 +131,9 @@ def is_sqlite_connection(connection) -> bool:
 
 def run_migrations(connection) -> None:
     statements = (
-        [SQLITE_RAW_JOB_POSTINGS_SQL, SQLITE_NORMALIZED_TITLES_SQL, SQLITE_JOB_POSTING_TITLES_SQL]
+        [SQLITE_RAW_JOB_POSTINGS_SQL, SQLITE_NORMALIZED_TITLES_SQL, SQLITE_JOB_POSTING_TITLES_SQL, SQLITE_ARCHIVE_METADATA_CACHE_SQL]
         if is_sqlite_connection(connection)
-        else [POSTGRES_RAW_JOB_POSTINGS_SQL, POSTGRES_NORMALIZED_TITLES_SQL, POSTGRES_JOB_POSTING_TITLES_SQL]
+        else [POSTGRES_RAW_JOB_POSTINGS_SQL, POSTGRES_NORMALIZED_TITLES_SQL, POSTGRES_JOB_POSTING_TITLES_SQL, POSTGRES_ARCHIVE_METADATA_CACHE_SQL]
     )
     cursor = connection.cursor()
     try:

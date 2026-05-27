@@ -14,6 +14,7 @@ def test_run_migrations_creates_tables_and_indexes() -> None:
     assert any("CREATE TABLE IF NOT EXISTS raw_job_postings" in sql for sql in sql_calls)
     assert any("CREATE TABLE IF NOT EXISTS normalized_titles" in sql for sql in sql_calls)
     assert any("CREATE TABLE IF NOT EXISTS job_posting_titles" in sql for sql in sql_calls)
+    assert any("CREATE TABLE IF NOT EXISTS archive_metadata_cache" in sql for sql in sql_calls)
     assert any("CREATE INDEX IF NOT EXISTS idx_raw_job_postings_source_run_id" in sql for sql in sql_calls)
     assert any("CREATE INDEX IF NOT EXISTS idx_raw_job_postings_scraped_at" in sql for sql in sql_calls)
     assert any("CREATE INDEX IF NOT EXISTS idx_raw_job_postings_title" in sql for sql in sql_calls)
@@ -36,3 +37,4 @@ def test_run_migrations_creates_sqlite_tables(tmp_path) -> None:
     assert "raw_job_postings" in tables
     assert "normalized_titles" in tables
     assert "job_posting_titles" in tables
+    assert "archive_metadata_cache" in tables

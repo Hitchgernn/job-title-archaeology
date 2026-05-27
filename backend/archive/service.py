@@ -1,12 +1,16 @@
 from collections import Counter
 
 from backend.archive.enrichment import build_dossier_metadata, build_record_metadata
-from backend.archive.models import ArchiveResponse, ArchiveSummary, DossierResponse, EraDensity
+from backend.archive.models import ArchiveEditorialMetadata, ArchiveResponse, ArchiveSummary, DossierResponse, EraDensity
 from backend.trends.models import TrendResult
 
 
-def build_archive_response(trends: list[TrendResult]) -> ArchiveResponse:
-    records = [build_record_metadata(trend, rank=index) for index, trend in enumerate(trends, start=1)]
+def build_archive_response(trends: list[TrendResult], metadata_by_title_id: dict[int, ArchiveEditorialMetadata] | None = None) -> ArchiveResponse:
+    metadata_by_title_id = metadata_by_title_id or {}
+    records = [
+        build_record_metadata(trend, rank=index, metadata=metadata_by_title_id.get(trend.normalized_title_id))
+        for index, trend in enumerate(trends, start=1)
+    ]
     category_counts = dict(Counter(record.category for record in records))
     return ArchiveResponse(
         records=records,
@@ -22,9 +26,14 @@ def build_archive_response(trends: list[TrendResult]) -> ArchiveResponse:
     )
 
 
-def build_dossier_response(trends: list[TrendResult], record_id: str) -> DossierResponse | None:
+def build_dossier_response(
+    trends: list[TrendResult],
+    record_id: str,
+    metadata_by_title_id: dict[int, ArchiveEditorialMetadata] | None = None,
+) -> DossierResponse | None:
+    metadata_by_title_id = metadata_by_title_id or {}
     for index, trend in enumerate(trends, start=1):
-        dossier = build_dossier_metadata(trend, rank=index)
+        dossier = build_dossier_metadata(trend, rank=index, metadata=metadata_by_title_id.get(trend.normalized_title_id))
         if dossier.record_id == record_id:
             return dossier
     return None

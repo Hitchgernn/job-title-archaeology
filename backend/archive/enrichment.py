@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 
-from backend.archive.models import AdoptionPoint, ArchiveRecord, DossierResponse, EarlyAdopter, SectorDensity
+from backend.archive.models import AdoptionPoint, ArchiveEditorialMetadata, ArchiveRecord, DossierResponse, EarlyAdopter, SectorDensity
 from backend.trends.models import TrendResult
 
 
@@ -145,8 +145,8 @@ def stable_record_id(rank: int, title: str) -> str:
     return f"JTA-{rank:04d}-{slug}"
 
 
-def _metadata_for(title: str) -> EditorialMetadata:
-    return CURATED_METADATA.get(
+def _metadata_for(title: str) -> ArchiveEditorialMetadata:
+    metadata = CURATED_METADATA.get(
         title,
         EditorialMetadata(
             category="Tech / Operations",
@@ -160,6 +160,15 @@ def _metadata_for(title: str) -> EditorialMetadata:
             competencies=("Signal analysis", "Operational design", "Vendor evaluation", "Stakeholder coordination"),
             outlook="If adoption spreads beyond early movers, this title may become a durable layer in operating teams.",
         ),
+    )
+    return ArchiveEditorialMetadata(
+        category=metadata.category,
+        sector=metadata.sector,
+        lead_paragraph=metadata.lead_paragraph,
+        pull_quote=metadata.pull_quote,
+        preceding_titles=list(metadata.preceding_titles),
+        competencies=list(metadata.competencies),
+        outlook=metadata.outlook,
     )
 
 
@@ -183,7 +192,7 @@ def _adoption_points(trend: TrendResult) -> list[AdoptionPoint]:
     ]
 
 
-def _sector_density(metadata: EditorialMetadata) -> list[SectorDensity]:
+def _sector_density(metadata: ArchiveEditorialMetadata) -> list[SectorDensity]:
     return [
         SectorDensity(sector=metadata.sector, percentage=45),
         SectorDensity(sector="Financial Services", percentage=22),
@@ -203,8 +212,8 @@ def _early_adopters(trend: TrendResult) -> list[EarlyAdopter]:
     ]
 
 
-def build_record_metadata(trend: TrendResult, rank: int) -> ArchiveRecord:
-    metadata = _metadata_for(trend.display_title)
+def build_record_metadata(trend: TrendResult, rank: int, metadata: ArchiveEditorialMetadata | None = None) -> ArchiveRecord:
+    metadata = metadata or _metadata_for(trend.display_title)
     return ArchiveRecord(
         record_id=stable_record_id(rank, trend.display_title),
         title=trend.display_title,
@@ -219,9 +228,9 @@ def build_record_metadata(trend: TrendResult, rank: int) -> ArchiveRecord:
     )
 
 
-def build_dossier_metadata(trend: TrendResult, rank: int) -> DossierResponse:
-    metadata = _metadata_for(trend.display_title)
-    record = build_record_metadata(trend, rank)
+def build_dossier_metadata(trend: TrendResult, rank: int, metadata: ArchiveEditorialMetadata | None = None) -> DossierResponse:
+    metadata = metadata or _metadata_for(trend.display_title)
+    record = build_record_metadata(trend, rank, metadata)
     return DossierResponse(
         **record.model_dump(),
         subheadline=f"First detected in {metadata.sector} · {len(trend.early_mover_companies)} companies found in the Bright Data corpus",
@@ -230,7 +239,7 @@ def build_dossier_metadata(trend: TrendResult, rank: int) -> DossierResponse:
         adoption_points=_adoption_points(trend),
         sector_density=_sector_density(metadata),
         early_adopters=_early_adopters(trend),
-        preceding_titles=list(metadata.preceding_titles),
-        competencies=list(metadata.competencies),
+        preceding_titles=metadata.preceding_titles,
+        competencies=metadata.competencies,
         outlook=metadata.outlook,
     )

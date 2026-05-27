@@ -1,4 +1,30 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+class ArchiveEditorialMetadata(BaseModel):
+    category: str
+    sector: str
+    lead_paragraph: str
+    pull_quote: str
+    preceding_titles: list[str] = Field(min_length=3, max_length=3)
+    competencies: list[str] = Field(min_length=4, max_length=4)
+    outlook: str
+
+    @field_validator("category", "sector", "lead_paragraph", "pull_quote", "outlook")
+    @classmethod
+    def require_text(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("value must not be empty")
+        return stripped
+
+    @field_validator("preceding_titles", "competencies")
+    @classmethod
+    def require_items(cls, values: list[str]) -> list[str]:
+        stripped = [value.strip() for value in values]
+        if any(not value for value in stripped):
+            raise ValueError("items must not be empty")
+        return stripped
 
 
 class ArchiveRecord(BaseModel):
