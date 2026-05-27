@@ -24,7 +24,7 @@ def test_build_record_metadata_uses_curated_title_data() -> None:
 
     assert metadata.record_id == "JTA-0001-AI-WORKFLOW-ARCHITECT"
     assert metadata.category == "Tech / Automation"
-    assert metadata.first_seen_label == "May 2026 · Demo Corpus"
+    assert metadata.first_seen_label == "May 2026 · Bright Data Corpus"
     assert metadata.velocity_label == "High · 86% growth index"
     assert "workflow" in metadata.excerpt.lower()
 
@@ -32,9 +32,9 @@ def test_build_record_metadata_uses_curated_title_data() -> None:
 def test_build_dossier_metadata_uses_curated_title_data() -> None:
     dossier = build_dossier_metadata(make_trend(), rank=1)
 
-    assert dossier.subheadline == "First detected in Technology · 2 companies adopted in the current demo window"
+    assert dossier.subheadline == "First detected in Technology · 2 companies found in the Bright Data corpus"
     assert "operating layer" in dossier.pull_quote
-    assert dossier.adoption_points[-1].annotation == "Current demo peak"
+    assert dossier.adoption_points[-1].annotation == "Bright Data peak"
     assert dossier.sector_density[0].sector == "Technology"
     assert dossier.early_adopters[0].company == "Acme AI Lab"
     assert "AI Program Manager" in dossier.preceding_titles
@@ -53,7 +53,7 @@ def test_unknown_title_gets_deterministic_fallback_metadata() -> None:
 
     assert dossier.record_id == "JTA-0002-QUANTUM-PAYROLL-CARTOGRAPHER"
     assert dossier.category == "Tech / Operations"
-    assert dossier.first_seen_label == "May 2026 · Demo Corpus"
+    assert dossier.first_seen_label == "May 2026 · Bright Data Corpus"
     assert dossier.early_adopters[0].company == "Acme AI Lab"
     assert dossier.sector_density[0].percentage == 45
 

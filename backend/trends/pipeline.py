@@ -6,8 +6,8 @@ from backend.trends.repository import fetch_trend_posting_rows
 from backend.trends.scoring import score_title_group
 
 
-def run_trend_scoring(connection, limit: int, now: datetime | None = None) -> list[TrendResult]:
-    rows = fetch_trend_posting_rows(connection)
+def run_trend_scoring(connection, limit: int, now: datetime | None = None, source: str | None = None) -> list[TrendResult]:
+    rows = fetch_trend_posting_rows(connection, source=source)
     if not rows:
         return []
 

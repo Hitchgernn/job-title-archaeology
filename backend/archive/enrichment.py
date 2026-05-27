@@ -179,7 +179,7 @@ def _adoption_points(trend: TrendResult) -> list[AdoptionPoint]:
     return [
         AdoptionPoint(label="Prior window", value=start),
         AdoptionPoint(label="Early signal", value=midpoint),
-        AdoptionPoint(label="Current edition", value=max(trend.recent_count, midpoint), annotation="Current demo peak"),
+        AdoptionPoint(label="Current edition", value=max(trend.recent_count, midpoint), annotation="Bright Data peak"),
     ]
 
 
@@ -209,7 +209,7 @@ def build_record_metadata(trend: TrendResult, rank: int) -> ArchiveRecord:
         record_id=stable_record_id(rank, trend.display_title),
         title=trend.display_title,
         category=metadata.category,
-        first_seen_label="May 2026 · Demo Corpus",
+        first_seen_label="May 2026 · Bright Data Corpus",
         velocity_label=_velocity_label(trend),
         score=trend.trend_score,
         recent_count=trend.recent_count,
@@ -224,7 +224,7 @@ def build_dossier_metadata(trend: TrendResult, rank: int) -> DossierResponse:
     record = build_record_metadata(trend, rank)
     return DossierResponse(
         **record.model_dump(),
-        subheadline=f"First detected in {metadata.sector} · {len(trend.early_mover_companies)} companies adopted in the current demo window",
+        subheadline=f"First detected in {metadata.sector} · {len(trend.early_mover_companies)} companies found in the Bright Data corpus",
         lead_paragraph=metadata.lead_paragraph,
         pull_quote=metadata.pull_quote,
         adoption_points=_adoption_points(trend),

@@ -79,7 +79,8 @@ def test_fetch_trend_posting_rows_supports_sqlite(tmp_path) -> None:
         )
         connection.commit()
 
-        rows = fetch_trend_posting_rows(connection)
+        rows = fetch_trend_posting_rows(connection, source="test")
+        filtered_rows = fetch_trend_posting_rows(connection, source="other")
     finally:
         connection.close()
 
@@ -87,3 +88,4 @@ def test_fetch_trend_posting_rows_supports_sqlite(tmp_path) -> None:
     assert rows[0].display_title == "AI Workflow Architect"
     assert rows[0].company == "Acme"
     assert rows[0].raw == {"industry": "Technology"}
+    assert filtered_rows == []
