@@ -26,6 +26,27 @@ def test_map_raw_posting_extracts_preview_fields():
     assert envelope.normalized_preview.posted_at == "2026-05-22"
 
 
+def test_map_raw_posting_accepts_bright_data_dataset_fields():
+    raw = {
+        "title": "Clinical AI Safety Officer",
+        "company": "Northstar Health",
+        "job_location": "Boston, MA",
+        "job_url": "https://example.com/jobs/clinical-ai-safety-officer",
+        "posted_date": "2026-05-20",
+        "description": "Own AI safety review for clinical workflows.",
+    }
+
+    envelope = map_raw_posting("brightdata-demo-run", raw)
+
+    assert envelope.source == "brightdata_web_scraper"
+    assert envelope.source_run_id == "brightdata-demo-run"
+    assert envelope.normalized_preview.title == "Clinical AI Safety Officer"
+    assert envelope.normalized_preview.company == "Northstar Health"
+    assert envelope.normalized_preview.location == "Boston, MA"
+    assert envelope.normalized_preview.url == "https://example.com/jobs/clinical-ai-safety-officer"
+    assert envelope.normalized_preview.posted_at == "2026-05-20"
+
+
 def test_envelope_serializes_iso_timestamp():
     envelope = RawJobPostingEnvelope.model_validate(
         {
