@@ -1,7 +1,8 @@
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from backend.db.connection import open_connection
 from backend.ingest.config import CollectionConfig
@@ -52,6 +53,43 @@ def normalize_database(database_url: str, limit: int = 1000) -> None:
         connection.commit()
     finally:
         connection.close()
+
+
+def _records_from_json_payload(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, list) and all(isinstance(item, dict) for item in payload):
+        return payload
+    if isinstance(payload, dict):
+        for key in ("data", "results", "items"):
+            items = payload.get(key)
+            if isinstance(items, list) and all(isinstance(item, dict) for item in items):
+                return items
+    raise ValueError("Bright Data JSON must be a list of objects or contain data/results/items list")
+
+
+def import_json_file(
+    source_path: Path,
+    run_id: str,
+    output_dir: Path,
+    database_url: str | None,
+) -> CollectionResult:
+    payload = json.loads(source_path.read_text(encoding="utf-8"))
+    raw_records = _records_from_json_payload(payload)
+    if not raw_records:
+        raise RuntimeError(f"Bright Data file {source_path} contained 0 records")
+
+    scraped_at = datetime.now(UTC)
+    envelopes = [map_raw_posting(run_id, raw_record, scraped_at) for raw_record in raw_records]
+    archive_path = write_jsonl_archive(output_dir, run_id, envelopes)
+    postgres_inserted = load_raw_postings(database_url, envelopes) if database_url else None
+    if database_url:
+        normalize_database(database_url, limit=1000)
+
+    return CollectionResult(
+        run_id=run_id,
+        archive_path=archive_path,
+        record_count=len(envelopes),
+        postgres_inserted=postgres_inserted,
+    )
 
 
 def run_collection(

@@ -51,7 +51,7 @@ def map_raw_posting(
             title=_first_present(raw, ("job_title", "title", "position", "name", "job_name")),
             company=_first_present(raw, ("company_name", "company", "employer", "company_url_text")),
             location=_first_present(raw, ("location", "job_location", "city", "country", "formatted_location")),
-            url=_first_present(raw, ("url", "job_url", "apply_url", "job_posting_url", "link")),
-            posted_at=_first_present(raw, ("date_posted", "posted_at", "posted_date", "published_at", "created_at")),
+            url=_first_present(raw, ("url", "job_url", "apply_url", "apply_link", "job_posting_url", "link")),
+            posted_at=_first_present(raw, ("date_posted", "date_posted_parsed", "posted_at", "posted_date", "job_posted_date", "published_at", "created_at")),
         ),
     )

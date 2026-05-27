@@ -1,9 +1,10 @@
+import os
 from pathlib import Path
 
 import typer
 
 from backend.ingest.config import EnvSettings, load_collection_config
-from backend.ingest.pipeline import run_collection
+from backend.ingest.pipeline import import_json_file, run_collection
 from backend.ingest.sources.brightdata import BrightDataClient
 
 app = typer.Typer(help="Job Title Archaeology ingestion commands")
@@ -12,6 +13,20 @@ app = typer.Typer(help="Job Title Archaeology ingestion commands")
 @app.callback()
 def main() -> None:
     pass
+
+
+@app.command("import-json")
+def import_json(
+    source: Path = typer.Argument(..., exists=True, readable=True),
+    run_id: str = typer.Option("brightdata-json-import", "--run-id"),
+    output_dir: Path = typer.Option(Path("data/raw"), "--output-dir"),
+) -> None:
+    result = import_json_file(source, run_id, output_dir, os.getenv("DATABASE_URL"))
+
+    typer.echo(f"Imported {result.record_count} records from {source}")
+    typer.echo(f"Archive: {result.archive_path}")
+    if result.postgres_inserted is not None:
+        typer.echo(f"Database inserted: {result.postgres_inserted}")
 
 
 @app.command()

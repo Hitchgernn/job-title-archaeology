@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -5,6 +6,36 @@ from typer.testing import CliRunner
 
 from backend.ingest.cli import app
 from backend.ingest.pipeline import CollectionResult
+
+
+def test_import_json_command_loads_downloaded_brightdata_file(tmp_path: Path) -> None:
+    source_path = tmp_path / "brightdata_jobs_sample.json"
+    source_path.write_text(
+        json.dumps([
+            {
+                "job_title": "Clinical AI Safety Officer",
+                "company_name": "Northstar Health",
+                "job_location": "Boston, MA",
+                "date_posted_parsed": "2026-05-20",
+                "apply_link": "https://example.com/apply",
+            }
+        ]),
+        encoding="utf-8",
+    )
+    runner = CliRunner()
+
+    with patch("backend.ingest.cli.import_json_file") as import_json_file:
+        import_json_file.return_value = CollectionResult(
+            run_id="brightdata-sample",
+            archive_path=tmp_path / "brightdata_brightdata-sample.jsonl",
+            record_count=1,
+            postgres_inserted=1,
+        )
+        result = runner.invoke(app, ["import-json", str(source_path), "--run-id", "brightdata-sample"])
+
+    assert result.exit_code == 0
+    assert "Imported 1 records" in result.stdout
+    import_json_file.assert_called_once()
 
 
 def test_collect_command_runs_pipeline(tmp_path: Path) -> None:
