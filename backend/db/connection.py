@@ -9,11 +9,11 @@ class DatabaseConfigError(RuntimeError):
     pass
 
 
+DEFAULT_SQLITE_URL = "sqlite:///job_title_archaeology.db"
+
+
 def get_database_url() -> str:
-    database_url = os.getenv("DATABASE_URL")
-    if not database_url:
-        raise DatabaseConfigError("DATABASE_URL is required")
-    return database_url
+    return os.getenv("DATABASE_URL") or DEFAULT_SQLITE_URL
 
 
 def is_sqlite_url(database_url: str) -> bool:

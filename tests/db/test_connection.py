@@ -2,7 +2,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from backend.db.connection import DatabaseConfigError, get_database_url, open_connection
+from backend.db.connection import DEFAULT_SQLITE_URL, get_database_url, open_connection
 
 
 def test_get_database_url_reads_environment(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -11,11 +11,10 @@ def test_get_database_url_reads_environment(monkeypatch: pytest.MonkeyPatch) -> 
     assert get_database_url() == "postgresql://example"
 
 
-def test_get_database_url_raises_when_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_get_database_url_defaults_to_local_sqlite(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("DATABASE_URL", raising=False)
 
-    with pytest.raises(DatabaseConfigError, match="DATABASE_URL"):
-        get_database_url()
+    assert get_database_url() == DEFAULT_SQLITE_URL
 
 
 def test_open_connection_uses_psycopg_connect() -> None:
