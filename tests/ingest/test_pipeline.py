@@ -53,8 +53,9 @@ def test_run_collection_rejects_empty_results(tmp_path):
         run_collection(client, _config(tmp_path), database_url=None)
 
 
+@patch("backend.ingest.pipeline.normalize_database")
 @patch("backend.ingest.pipeline.load_raw_postings", return_value=2)
-def test_run_collection_with_database_url_loads_postgres(load_raw_postings, tmp_path):
+def test_run_collection_with_database_url_loads_postgres(load_raw_postings, normalize_database, tmp_path):
     client = Mock()
     client.start_collection.return_value = "run-123"
     client.fetch_results.return_value = [
@@ -66,3 +67,4 @@ def test_run_collection_with_database_url_loads_postgres(load_raw_postings, tmp_
 
     assert result.postgres_inserted == 2
     load_raw_postings.assert_called_once()
+    normalize_database.assert_called_once_with("postgresql://example", limit=1000)

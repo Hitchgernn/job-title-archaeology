@@ -3,10 +3,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 
+from backend.db.connection import open_connection
 from backend.ingest.config import CollectionConfig
 from backend.ingest.models import map_raw_posting
 from backend.ingest.sinks.jsonl import write_jsonl_archive
 from backend.ingest.sinks.postgres import load_raw_postings
+from backend.normalize.pipeline import run_normalization
 
 
 class CollectionClient(Protocol):
@@ -43,6 +45,15 @@ def build_collection_payload(config: CollectionConfig) -> dict[str, object]:
     }
 
 
+def normalize_database(database_url: str, limit: int = 1000) -> None:
+    connection = open_connection(database_url)
+    try:
+        run_normalization(connection, limit=limit)
+        connection.commit()
+    finally:
+        connection.close()
+
+
 def run_collection(
     client: CollectionClient,
     config: CollectionConfig,
@@ -64,6 +75,8 @@ def run_collection(
     envelopes = [map_raw_posting(run_id, raw_record, scraped_at) for raw_record in raw_records]
     archive_path = write_jsonl_archive(config.collection.output_dir, run_id, envelopes)
     postgres_inserted = load_raw_postings(database_url, envelopes) if database_url else None
+    if database_url:
+        normalize_database(database_url, limit=1000)
 
     return CollectionResult(
         run_id=run_id,
