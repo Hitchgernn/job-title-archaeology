@@ -41,6 +41,13 @@ def test_build_dossier_metadata_uses_curated_title_data() -> None:
     assert "Workflow design" in dossier.competencies
 
 
+def test_cross_sector_archive_metadata() -> None:
+    record = build_record_metadata(make_trend("Clinical AI Safety Officer"), rank=1)
+
+    assert record.category == "HEALTHCARE"
+    assert "clinical" in record.excerpt.lower()
+
+
 def test_unknown_title_gets_deterministic_fallback_metadata() -> None:
     dossier = build_dossier_metadata(make_trend("Quantum Payroll Cartographer"), rank=2)
 

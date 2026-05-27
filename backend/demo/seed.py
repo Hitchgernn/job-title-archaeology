@@ -19,6 +19,13 @@ DEMO_TITLES = [
     ("LLM Reliability Engineer", "Cobalt", "Manufacturing", 3),
     ("Prompt Systems Analyst", "DeltaWorks", "Consulting", 4),
     ("Automation Governance Manager", "Evergreen", "Insurance", 5),
+    ("Climate Risk Modeler", "Meridian Capital", "Finance", 2),
+    ("Digital Asset Compliance Lead", "Harbor Bank", "Finance", 3),
+    ("Clinical AI Safety Officer", "Northstar Health", "Healthcare", 2),
+    ("Virtual Care Operations Manager", "CareBridge", "Healthcare", 4),
+    ("Robotics Fleet Coordinator", "Cobalt Works", "Manufacturing", 2),
+    ("Supply Chain Resilience Planner", "Atlas Logistics", "Manufacturing", 5),
+    ("Algorithmic Accountability Officer", "CivicWorks", "Public Sector", 3),
 ]
 
 PRIOR_TITLES = [

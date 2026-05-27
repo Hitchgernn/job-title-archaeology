@@ -53,6 +53,90 @@ CURATED_METADATA: dict[str, EditorialMetadata] = {
         competencies=("Evaluation harnesses", "Incident analysis", "Latency tracing", "Model monitoring"),
         outlook="The role is likely to remain technical and high-signal while AI features enter core production paths.",
     ),
+    "Climate Risk Modeler": EditorialMetadata(
+        category="FINANCE",
+        sector="Financial Services",
+        lead_paragraph=(
+            "Climate risk modeling is shifting from research desks into operating finance teams. "
+            "The title appears where lenders and asset managers need quantifiable exposure views across portfolios."
+        ),
+        pull_quote="Climate risk is becoming a balance-sheet discipline, not a sustainability side report.",
+        preceding_titles=("Risk Analyst", "ESG Analyst", "Quantitative Modeler"),
+        competencies=("Scenario modeling", "Portfolio analytics", "Regulatory reporting", "Climate data interpretation"),
+        outlook="Expect the title to spread as insurers, banks, and asset managers operationalize climate stress testing.",
+    ),
+    "Digital Asset Compliance Lead": EditorialMetadata(
+        category="FINANCE",
+        sector="Financial Services",
+        lead_paragraph=(
+            "Digital asset compliance roles signal that crypto exposure is moving from experimental desks into formal control environments. "
+            "The title appears where firms need policy ownership across custody, reporting, and transaction monitoring."
+        ),
+        pull_quote="Digital assets become enterprise activity when compliance gets a named owner.",
+        preceding_titles=("Compliance Manager", "Financial Crimes Analyst", "Digital Assets Associate"),
+        competencies=("Regulatory analysis", "Transaction monitoring", "Custody controls", "Policy design"),
+        outlook="The role should grow where institutions keep crypto products while regulators demand clearer accountability.",
+    ),
+    "Clinical AI Safety Officer": EditorialMetadata(
+        category="HEALTHCARE",
+        sector="Healthcare",
+        lead_paragraph=(
+            "Clinical AI safety is emerging as hospitals move model-assisted workflows closer to patient care. "
+            "The title marks a need for accountable review of errors, escalation paths, and clinical governance."
+        ),
+        pull_quote="Clinical AI adoption becomes credible only when safety has an operational owner.",
+        preceding_titles=("Clinical Safety Officer", "Health Informatics Lead", "AI Governance Manager"),
+        competencies=("Clinical risk review", "Model evaluation", "Patient safety policy", "Workflow governance"),
+        outlook="Expect this role to appear first in health systems deploying AI triage, documentation, and care navigation tools.",
+    ),
+    "Virtual Care Operations Manager": EditorialMetadata(
+        category="HEALTHCARE",
+        sector="Healthcare",
+        lead_paragraph=(
+            "Virtual care operations roles reflect telehealth moving from emergency adoption to durable delivery model. "
+            "The title appears where providers need to coordinate staffing, tooling, patient routing, and service quality."
+        ),
+        pull_quote="Virtual care is becoming an operating model rather than a channel experiment.",
+        preceding_titles=("Clinic Operations Manager", "Telehealth Coordinator", "Patient Access Manager"),
+        competencies=("Capacity planning", "Patient routing", "Care team coordination", "Service quality analytics"),
+        outlook="The title should persist as health systems blend in-person, remote, and asynchronous care delivery.",
+    ),
+    "Robotics Fleet Coordinator": EditorialMetadata(
+        category="MANUFACTURING",
+        sector="Manufacturing",
+        lead_paragraph=(
+            "Robotics fleet coordination appears when automation moves from isolated cells to distributed operating assets. "
+            "The title signals a need to schedule, monitor, and maintain robot fleets like production infrastructure."
+        ),
+        pull_quote="Factories are beginning to manage robots as fleets, not machines.",
+        preceding_titles=("Maintenance Planner", "Automation Technician", "Production Coordinator"),
+        competencies=("Fleet monitoring", "Maintenance scheduling", "Production planning", "Robotics vendor coordination"),
+        outlook="Expect the role to grow in warehouses, factories, and logistics networks scaling autonomous equipment.",
+    ),
+    "Supply Chain Resilience Planner": EditorialMetadata(
+        category="MANUFACTURING",
+        sector="Manufacturing",
+        lead_paragraph=(
+            "Supply chain resilience planning titles show companies formalizing disruption readiness after years of volatile logistics. "
+            "The work blends scenario planning, supplier visibility, and contingency design."
+        ),
+        pull_quote="Resilience is becoming a planned capability, not a crisis response.",
+        preceding_titles=("Supply Chain Analyst", "Demand Planner", "Operations Planner"),
+        competencies=("Scenario planning", "Supplier risk analysis", "Inventory strategy", "Logistics analytics"),
+        outlook="The title should remain relevant as manufacturers diversify suppliers and regionalize critical operations.",
+    ),
+    "Algorithmic Accountability Officer": EditorialMetadata(
+        category="PUBLIC SECTOR",
+        sector="Public Sector",
+        lead_paragraph=(
+            "Algorithmic accountability roles emerge as public agencies and regulated institutions face scrutiny over automated decisions. "
+            "The title points to governance work around audits, appeals, documentation, and public trust."
+        ),
+        pull_quote="Algorithmic systems enter public life only after accountability becomes a job, not a principle.",
+        preceding_titles=("Policy Analyst", "Data Governance Lead", "Compliance Officer"),
+        competencies=("Algorithm audit", "Public policy analysis", "Documentation standards", "Stakeholder review"),
+        outlook="Expect demand to rise where governments and vendors deploy AI in benefits, hiring, licensing, and enforcement workflows.",
+    ),
 }
 
 
