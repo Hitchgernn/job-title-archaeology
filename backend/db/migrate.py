@@ -5,7 +5,9 @@ CREATE TABLE IF NOT EXISTS raw_job_postings (
     source_run_id TEXT NOT NULL,
     scraped_at TIMESTAMPTZ NOT NULL,
     title TEXT,
+    title_key TEXT,
     company TEXT,
+    company_key TEXT,
     location TEXT,
     url TEXT,
     posted_at TEXT,
@@ -65,7 +67,9 @@ CREATE TABLE IF NOT EXISTS raw_job_postings (
     source_run_id TEXT NOT NULL,
     scraped_at TEXT NOT NULL,
     title TEXT,
+    title_key TEXT,
     company TEXT,
+    company_key TEXT,
     location TEXT,
     url TEXT,
     posted_at TEXT,
@@ -118,10 +122,21 @@ CREATE TABLE IF NOT EXISTS archive_metadata_cache (
 )
 """
 
+POSTGRES_ALTER_SQL = [
+    "ALTER TABLE raw_job_postings ADD COLUMN IF NOT EXISTS title_key TEXT",
+    "ALTER TABLE raw_job_postings ADD COLUMN IF NOT EXISTS company_key TEXT",
+]
+
+SQLITE_ALTER_SQL = [
+    "ALTER TABLE raw_job_postings ADD COLUMN title_key TEXT",
+    "ALTER TABLE raw_job_postings ADD COLUMN company_key TEXT",
+]
+
 INDEX_SQL = [
     "CREATE INDEX IF NOT EXISTS idx_raw_job_postings_source_run_id ON raw_job_postings(source_run_id)",
     "CREATE INDEX IF NOT EXISTS idx_raw_job_postings_scraped_at ON raw_job_postings(scraped_at)",
     "CREATE INDEX IF NOT EXISTS idx_raw_job_postings_title ON raw_job_postings(title)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_raw_job_postings_source_title_company_key ON raw_job_postings(source, title_key, company_key) WHERE title_key IS NOT NULL AND company_key IS NOT NULL",
 ]
 
 
@@ -139,6 +154,13 @@ def run_migrations(connection) -> None:
     try:
         for statement in statements:
             cursor.execute(statement)
+        alter_statements = SQLITE_ALTER_SQL if is_sqlite_connection(connection) else POSTGRES_ALTER_SQL
+        for statement in alter_statements:
+            try:
+                cursor.execute(statement)
+            except Exception as exc:
+                if "duplicate column" not in str(exc).lower():
+                    raise
         for statement in INDEX_SQL:
             cursor.execute(statement)
     finally:

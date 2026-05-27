@@ -18,6 +18,7 @@ def test_run_migrations_creates_tables_and_indexes() -> None:
     assert any("CREATE INDEX IF NOT EXISTS idx_raw_job_postings_source_run_id" in sql for sql in sql_calls)
     assert any("CREATE INDEX IF NOT EXISTS idx_raw_job_postings_scraped_at" in sql for sql in sql_calls)
     assert any("CREATE INDEX IF NOT EXISTS idx_raw_job_postings_title" in sql for sql in sql_calls)
+    assert any("idx_raw_job_postings_source_title_company_key" in sql for sql in sql_calls)
     connection.commit.assert_called_once()
 
 
@@ -31,6 +32,14 @@ def test_run_migrations_creates_sqlite_tables(tmp_path) -> None:
                 "SELECT name FROM sqlite_master WHERE type = 'table'"
             ).fetchall()
         }
+        columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(raw_job_postings)").fetchall()
+        }
+        indexes = {
+            row[1]
+            for row in connection.execute("PRAGMA index_list(raw_job_postings)").fetchall()
+        }
     finally:
         connection.close()
 
@@ -38,3 +47,6 @@ def test_run_migrations_creates_sqlite_tables(tmp_path) -> None:
     assert "normalized_titles" in tables
     assert "job_posting_titles" in tables
     assert "archive_metadata_cache" in tables
+    assert "title_key" in columns
+    assert "company_key" in columns
+    assert "idx_raw_job_postings_source_title_company_key" in indexes

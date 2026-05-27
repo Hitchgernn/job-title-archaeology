@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Sequence
 
 import psycopg
@@ -15,7 +16,9 @@ CREATE TABLE IF NOT EXISTS raw_job_postings (
     source_run_id TEXT NOT NULL,
     scraped_at TIMESTAMPTZ NOT NULL,
     title TEXT,
+    title_key TEXT,
     company TEXT,
+    company_key TEXT,
     location TEXT,
     url TEXT,
     posted_at TEXT,
@@ -30,12 +33,15 @@ INSERT INTO raw_job_postings (
     source_run_id,
     scraped_at,
     title,
+    title_key,
     company,
+    company_key,
     location,
     url,
     posted_at,
     raw
-) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+ON CONFLICT DO NOTHING
 """
 
 _SQLITE_INSERT_SQL = """
@@ -44,12 +50,33 @@ INSERT INTO raw_job_postings (
     source_run_id,
     scraped_at,
     title,
+    title_key,
     company,
+    company_key,
     location,
     url,
     posted_at,
     raw
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT DO NOTHING
+"""
+
+_EXISTS_SQL = """
+SELECT 1
+FROM raw_job_postings
+WHERE source = %s
+  AND (title_key = %s OR lower(btrim(title)) = %s)
+  AND (company_key = %s OR lower(btrim(company)) = %s)
+LIMIT 1
+"""
+
+_SQLITE_EXISTS_SQL = """
+SELECT 1
+FROM raw_job_postings
+WHERE source = ?
+  AND (title_key = ? OR lower(trim(title)) = ?)
+  AND (company_key = ? OR lower(trim(company)) = ?)
+LIMIT 1
 """
 
 
@@ -57,15 +84,34 @@ def is_sqlite_url(database_url: str) -> bool:
     return database_url.startswith("sqlite:///")
 
 
+def dedupe_key(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = re.sub(r"\s+", " ", value.strip().casefold())
+    return normalized or None
+
+
+def row_exists(cursor, sql: str, source: str, title_key: str | None, company_key: str | None) -> bool:
+    if not title_key or not company_key:
+        return False
+    cursor.execute(sql, (source, title_key, title_key, company_key, company_key))
+    return cursor.fetchone() is not None
+
+
 def load_raw_postings(database_url: str, records: Sequence[RawJobPostingEnvelope]) -> int:
     if is_sqlite_url(database_url):
         connection = open_connection(database_url)
         try:
             run_migrations(connection)
+            inserted = 0
             cursor = connection.cursor()
             try:
                 for record in records:
                     preview = record.normalized_preview
+                    title_key = dedupe_key(preview.title)
+                    company_key = dedupe_key(preview.company)
+                    if row_exists(cursor, _SQLITE_EXISTS_SQL, record.source, title_key, company_key):
+                        continue
                     cursor.execute(
                         _SQLITE_INSERT_SQL,
                         (
@@ -73,13 +119,16 @@ def load_raw_postings(database_url: str, records: Sequence[RawJobPostingEnvelope
                             record.source_run_id,
                             record.scraped_at.isoformat(),
                             preview.title,
+                            title_key,
                             preview.company,
+                            company_key,
                             preview.location,
                             preview.url,
                             preview.posted_at,
                             json.dumps(record.raw),
                         ),
                     )
+                    inserted += cursor.rowcount
             finally:
                 cursor.close()
             connection.commit()
@@ -88,14 +137,19 @@ def load_raw_postings(database_url: str, records: Sequence[RawJobPostingEnvelope
             raise
         finally:
             connection.close()
-        return len(records)
+        return inserted
 
     connection = psycopg.connect(database_url)
     try:
+        run_migrations(connection)
         with connection.cursor() as cursor:
-            cursor.execute(_CREATE_TABLE_SQL)
+            inserted = 0
             for record in records:
                 preview = record.normalized_preview
+                title_key = dedupe_key(preview.title)
+                company_key = dedupe_key(preview.company)
+                if row_exists(cursor, _EXISTS_SQL, record.source, title_key, company_key):
+                    continue
                 cursor.execute(
                     _INSERT_SQL,
                     (
@@ -103,13 +157,16 @@ def load_raw_postings(database_url: str, records: Sequence[RawJobPostingEnvelope
                         record.source_run_id,
                         record.scraped_at,
                         preview.title,
+                        title_key,
                         preview.company,
+                        company_key,
                         preview.location,
                         preview.url,
                         preview.posted_at,
                         Jsonb(record.raw),
                     ),
                 )
+                inserted += cursor.rowcount
         connection.commit()
     except Exception:
         connection.rollback()
@@ -117,4 +174,4 @@ def load_raw_postings(database_url: str, records: Sequence[RawJobPostingEnvelope
     finally:
         connection.close()
 
-    return len(records)
+    return inserted
