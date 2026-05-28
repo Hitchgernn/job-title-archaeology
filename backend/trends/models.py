@@ -11,7 +11,13 @@ class TrendPostingRow(BaseModel):
     token_key: str
     company: str | None = None
     scraped_at: datetime
+    posted_at: str | None = None
     raw: dict[str, Any] = Field(default_factory=dict)
+
+
+class WeeklyCount(BaseModel):
+    week_start: str
+    count: int
 
 
 class TrendScores(BaseModel):

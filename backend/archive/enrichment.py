@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 
 from backend.archive.models import AdoptionPoint, ArchiveEditorialMetadata, ArchiveRecord, DossierResponse, EarlyAdopter, SectorDensity
-from backend.trends.models import TrendResult
+from backend.trends.models import TrendResult, WeeklyCount
 
 
 @dataclass(frozen=True)
@@ -201,7 +201,17 @@ def _velocity_label(trend: TrendResult) -> str:
     return f"{tier} · {round(trend.scores.velocity * 100)}% growth index"
 
 
-def _adoption_points(trend: TrendResult) -> list[AdoptionPoint]:
+def _adoption_points(trend: TrendResult, weekly_counts: list[WeeklyCount] | None = None) -> list[AdoptionPoint]:
+    if weekly_counts:
+        last_index = len(weekly_counts) - 1
+        return [
+            AdoptionPoint(
+                label=bucket.week_start,
+                value=bucket.count,
+                annotation="Bright Data peak" if index == last_index else None,
+            )
+            for index, bucket in enumerate(weekly_counts)
+        ]
     start = max(trend.prior_count, 1)
     midpoint = max(start + 1, round((trend.recent_count + start) / 2))
     return [
@@ -251,7 +261,12 @@ def build_record_metadata(trend: TrendResult, rank: int, metadata: ArchiveEditor
     )
 
 
-def build_dossier_metadata(trend: TrendResult, rank: int, metadata: ArchiveEditorialMetadata | None = None) -> DossierResponse:
+def build_dossier_metadata(
+    trend: TrendResult,
+    rank: int,
+    metadata: ArchiveEditorialMetadata | None = None,
+    weekly_counts: list[WeeklyCount] | None = None,
+) -> DossierResponse:
     metadata = metadata or _metadata_for(trend.display_title)
     record = build_record_metadata(trend, rank, metadata)
     return DossierResponse(
@@ -259,7 +274,7 @@ def build_dossier_metadata(trend: TrendResult, rank: int, metadata: ArchiveEdito
         subheadline=f"First detected in {metadata.sector} · {len(trend.early_mover_companies)} companies found in the Bright Data corpus",
         lead_paragraph=metadata.lead_paragraph,
         pull_quote=metadata.pull_quote,
-        adoption_points=_adoption_points(trend),
+        adoption_points=_adoption_points(trend, weekly_counts),
         sector_density=_sector_density(metadata),
         early_adopters=_early_adopters(trend),
         preceding_titles=metadata.preceding_titles,

@@ -6,7 +6,7 @@ from backend.archive.repository import fetch_cached_metadata
 from backend.archive.service import build_archive_response, build_dossier_response
 from backend.db.connection import open_connection
 from backend.db.migrate import run_migrations
-from backend.trends.pipeline import run_trend_scoring
+from backend.trends.pipeline import fetch_weekly_counts_map, run_trend_scoring
 
 router = APIRouter(prefix="/archive", tags=["archive"])
 ARCHIVE_SOURCE = "brightdata_web_scraper"
@@ -30,8 +30,10 @@ def archive_dossier(record_id: str, limit: int = Query(10, ge=1, le=50)) -> Doss
     try:
         run_migrations(connection)
         trends = run_trend_scoring(connection, limit=limit, source=ARCHIVE_SOURCE)
-        metadata = fetch_cached_metadata(connection, [trend.normalized_title_id for trend in trends], PROMPT_VERSION)
-        dossier = build_dossier_response(trends, record_id, metadata)
+        title_ids = [trend.normalized_title_id for trend in trends]
+        metadata = fetch_cached_metadata(connection, title_ids, PROMPT_VERSION)
+        weekly_counts = fetch_weekly_counts_map(connection, title_ids, source=ARCHIVE_SOURCE)
+        dossier = build_dossier_response(trends, record_id, metadata, weekly_counts)
     finally:
         connection.close()
 
