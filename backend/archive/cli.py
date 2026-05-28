@@ -69,6 +69,7 @@ def generate(
 def generate_images(
     limit: int = typer.Option(10, "--limit", min=1, max=50),
     output_dir: Path = typer.Option(Path("frontend/public/archive-generated"), "--output-dir"),
+    public_prefix: str = typer.Option("/archive-generated", "--public-prefix"),
     force: bool = typer.Option(False, "--force"),
 ) -> None:
     connection = open_connection()
@@ -98,6 +99,7 @@ def generate_images(
                 output_dir,
                 image_filename(trend),
                 provider.generate(prompt),
+                public_prefix,
             )
             update_cached_image(
                 connection,

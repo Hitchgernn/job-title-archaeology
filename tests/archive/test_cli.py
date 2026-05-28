@@ -137,6 +137,8 @@ def test_generate_images_force_writes_image_and_updates_cache(tmp_path) -> None:
                 "10",
                 "--output-dir",
                 str(tmp_path),
+                "--public-prefix",
+                "/test-generated",
                 "--force",
             ],
         )
@@ -145,3 +147,4 @@ def test_generate_images_force_writes_image_and_updates_cache(tmp_path) -> None:
     assert "generated 1 images; skipped 0" in result.stdout
     assert (tmp_path / "10-ai-workflow-architect.png").read_bytes() == b"image-bytes"
     update_cached.assert_called_once()
+    assert update_cached.call_args.args[3] == "/test-generated/10-ai-workflow-architect.png"

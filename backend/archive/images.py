@@ -60,11 +60,16 @@ def build_archive_image_prompt(
     )
 
 
-def save_image_bytes(output_dir: Path, filename: str, content: bytes) -> str:
+def save_image_bytes(
+    output_dir: Path,
+    filename: str,
+    content: bytes,
+    public_prefix: str = "/archive-generated",
+) -> str:
     path = Path(filename)
     if path.name != filename or path.suffix.casefold() != ".png":
         raise ValueError("invalid image filename")
 
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / filename).write_bytes(content)
-    return f"/archive-generated/{filename}"
+    return f"{public_prefix.rstrip('/')}/{filename}"
