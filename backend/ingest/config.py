@@ -29,9 +29,20 @@ class CollectionConfig(BaseModel):
 class EnvSettings(BaseSettings):
     brightdata_api_token: str = Field(alias="BRIGHTDATA_API_TOKEN")
     brightdata_web_scraper_id: str | None = Field(default=None, alias="BRIGHTDATA_WEB_SCRAPER_ID")
+    brightdata_web_scraper_id_indeed: str | None = Field(default=None, alias="BRIGHTDATA_WEB_SCRAPER_ID_INDEED")
+    brightdata_web_scraper_id_linkedin: str | None = Field(default=None, alias="BRIGHTDATA_WEB_SCRAPER_ID_LINKEDIN")
     database_url: str | None = Field(default=None, alias="DATABASE_URL")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    def dataset_id_for(self, source: str) -> str | None:
+        match source:
+            case "indeed":
+                return self.brightdata_web_scraper_id_indeed
+            case "linkedin":
+                return self.brightdata_web_scraper_id_linkedin
+            case _:
+                return self.brightdata_web_scraper_id
 
 
 def load_collection_config(path: Path) -> CollectionConfig:

@@ -31,13 +31,16 @@ class BrightDataClient:
             "Content-Type": "application/json",
         }
 
-    def start_collection(self, dataset_id: str, payload: dict[str, Any]) -> str:
+    def start_collection(self, dataset_id: str, payload: dict[str, Any], query: dict[str, Any] | None = None) -> str:
         action = "start collection"
+        params: dict[str, Any] = {"dataset_id": dataset_id}
+        if query:
+            params.update(query)
         response = self._request(
             action,
             "post",
             f"{self.base_url}/datasets/v3/trigger",
-            params={"dataset_id": dataset_id},
+            params=params,
             headers=self._headers,
             json=payload,
             timeout=60,

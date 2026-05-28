@@ -46,6 +46,81 @@ def build_collection_payload(config: CollectionConfig) -> dict[str, object]:
     }
 
 
+def build_indeed_inputs(keywords: list[str], locations: list[str], country: str = "US") -> list[dict[str, str]]:
+    return [
+        {
+            "country": country,
+            "domain": "indeed.com",
+            "keyword_search": keyword,
+            "location": location,
+            "date_posted": "",
+            "posted_by": "",
+            "location_radius": "",
+        }
+        for keyword in keywords
+        for location in locations
+    ]
+
+
+def build_linkedin_inputs(keywords: list[str], locations: list[str], country: str = "US") -> list[dict[str, str]]:
+    return [
+        {
+            "location": location,
+            "keyword": keyword,
+            "country": country,
+            "time_range": "Past month",
+            "job_type": "",
+            "experience_level": "",
+            "remote": "",
+            "company": "",
+            "location_radius": "",
+        }
+        for keyword in keywords
+        for location in locations
+    ]
+
+
+def run_keyword_collection(
+    client: CollectionClient,
+    *,
+    dataset_id: str,
+    inputs: list[dict[str, Any]],
+    output_dir: Path,
+    poll_delay_seconds: int,
+    max_poll_attempts: int,
+    database_url: str | None,
+    limit_per_input: int | None = None,
+) -> CollectionResult:
+    payload: dict[str, Any] = {"input": inputs}
+    query = {
+        "include_errors": "true",
+        "type": "discover_new",
+        "discover_by": "keyword",
+    }
+    if limit_per_input is not None:
+        query["limit_per_input"] = str(limit_per_input)
+    run_id = client.start_collection(dataset_id, payload, query)
+    client.poll_collection(run_id, poll_delay_seconds, max_poll_attempts)
+
+    raw_records = client.fetch_results(run_id)
+    if not raw_records:
+        raise RuntimeError(f"Bright Data run {run_id} returned 0 records")
+
+    scraped_at = datetime.now(UTC)
+    envelopes = [map_raw_posting(run_id, raw_record, scraped_at) for raw_record in raw_records]
+    archive_path = write_jsonl_archive(output_dir, run_id, envelopes)
+    postgres_inserted = load_raw_postings(database_url, envelopes) if database_url else None
+    if database_url:
+        normalize_database(database_url, limit=1000)
+
+    return CollectionResult(
+        run_id=run_id,
+        archive_path=archive_path,
+        record_count=len(envelopes),
+        postgres_inserted=postgres_inserted,
+    )
+
+
 def normalize_database(database_url: str, limit: int = 1000) -> None:
     connection = open_connection(database_url)
     try:
