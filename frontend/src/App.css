@@ -402,6 +402,7 @@ button {
   border-top: 2px solid #1c1b1b;
   margin-top: 18px;
   padding-top: 18px;
+  padding-bottom: 18px;
 }
 
 .archive-pagination button {

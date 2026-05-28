@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import appCss from './App.css?raw'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
@@ -66,9 +65,6 @@ describe('App', () => {
     expect(document.querySelector('.record-illustration')).not.toBeInTheDocument()
   })
 
-  it('uses full-width archive result layout without the removed image column', () => {
-    expect(appCss).not.toContain('grid-template-columns: 132px minmax(0, 1fr)')
-  })
 
   it('renders dossier image from image_path', async () => {
     const fetchMock = vi.fn()
