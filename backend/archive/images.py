@@ -8,8 +8,8 @@ from backend.trends.models import TrendResult
 def image_filename(trend: TrendResult) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", trend.display_title.casefold()).strip("-")
     if not slug:
-        slug = f"title-{trend.normalized_title_id}"
-    return f"{slug}.png"
+        slug = "title"
+    return f"{trend.normalized_title_id}-{slug}.png"
 
 
 def build_archive_image_prompt(
@@ -28,6 +28,10 @@ def build_archive_image_prompt(
 
 
 def save_image_bytes(output_dir: Path, filename: str, content: bytes) -> str:
+    path = Path(filename)
+    if path.name != filename or path.suffix.casefold() != ".png":
+        raise ValueError("invalid image filename")
+
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / filename).write_bytes(content)
     return f"/archive-generated/{filename}"

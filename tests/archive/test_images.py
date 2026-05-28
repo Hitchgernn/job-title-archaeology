@@ -1,3 +1,5 @@
+import pytest
+
 from backend.archive.images import build_archive_image_prompt, image_filename, save_image_bytes
 from backend.archive.models import ArchiveEditorialMetadata
 from backend.trends.models import TrendResult, TrendScores
@@ -5,7 +7,7 @@ from backend.trends.models import TrendResult, TrendScores
 
 def make_trend() -> TrendResult:
     return TrendResult(
-        normalized_title_id=42,
+        normalized_title_id=10,
         display_title="AI Workflow Architect",
         token_key="ai workflow architect",
         recent_count=12,
@@ -39,11 +41,16 @@ def test_build_archive_image_prompt_is_monochrome_and_textless():
 
 
 def test_image_filename_is_stable_slug():
-    assert image_filename(make_trend()) == "ai-workflow-architect.png"
+    assert image_filename(make_trend()) == "10-ai-workflow-architect.png"
 
 
 def test_save_image_bytes_writes_public_path(tmp_path):
-    public_path = save_image_bytes(tmp_path, "ai-workflow-architect.png", b"png-bytes")
+    public_path = save_image_bytes(tmp_path, "10-ai-workflow-architect.png", b"png-bytes")
 
-    assert public_path == "/archive-generated/ai-workflow-architect.png"
-    assert (tmp_path / "ai-workflow-architect.png").read_bytes() == b"png-bytes"
+    assert public_path == "/archive-generated/10-ai-workflow-architect.png"
+    assert (tmp_path / "10-ai-workflow-architect.png").read_bytes() == b"png-bytes"
+
+
+def test_save_image_bytes_rejects_path_traversal(tmp_path):
+    with pytest.raises(ValueError):
+        save_image_bytes(tmp_path, "../bad.png", b"png-bytes")
