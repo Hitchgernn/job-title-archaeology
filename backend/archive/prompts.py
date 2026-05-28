@@ -1,6 +1,6 @@
 from backend.trends.models import TrendResult
 
-PROMPT_VERSION = "archive-editorial-v1"
+PROMPT_VERSION = "archive-editorial-v2"
 
 
 def build_archive_metadata_prompt(trend: TrendResult) -> str:
@@ -24,8 +24,17 @@ JSON schema:
   "pull_quote": "12-18 words, quotable sentence, no quotation marks",
   "preceding_titles": ["exactly 3 earlier job titles this role likely evolved from"],
   "competencies": ["exactly 4 short competency phrases"],
-  "outlook": "25-35 words, one sentence about likely adoption trajectory"
+  "outlook": "25-35 words, one sentence about likely adoption trajectory",
+  "sector_breakdown": [
+    {{"sector": "sector label", "percentage": integer 0-100}}
+  ]
 }}
+
+Sector breakdown rules:
+- 4-6 entries that estimate where this title is most active across industry sectors.
+- Percentages must be integers and sum to 100.
+- Use the early mover companies and the title's domain context to infer sectors.
+- Use sector labels from this set when possible: Technology, Financial Services, Healthcare, Manufacturing, Public Sector, Retail, Energy, Education, Logistics, Other.
 
 Style constraints:
 - Sound like an archival magazine note, not marketing copy.

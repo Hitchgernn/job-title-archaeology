@@ -222,6 +222,11 @@ def _adoption_points(trend: TrendResult, weekly_counts: list[WeeklyCount] | None
 
 
 def _sector_density(metadata: ArchiveEditorialMetadata) -> list[SectorDensity]:
+    if metadata.sector_breakdown:
+        return [
+            SectorDensity(sector=item.sector, percentage=item.percentage)
+            for item in metadata.sector_breakdown
+        ]
     return [
         SectorDensity(sector=metadata.sector, percentage=45),
         SectorDensity(sector="Financial Services", percentage=22),

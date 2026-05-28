@@ -1,6 +1,26 @@
 from pydantic import BaseModel, Field, field_validator
 
 
+class ArchiveSectorBreakdown(BaseModel):
+    sector: str
+    percentage: int
+
+    @field_validator("sector")
+    @classmethod
+    def require_sector(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("sector must not be empty")
+        return stripped
+
+    @field_validator("percentage")
+    @classmethod
+    def require_percentage(cls, value: int) -> int:
+        if value < 0 or value > 100:
+            raise ValueError("percentage must be between 0 and 100")
+        return value
+
+
 class ArchiveEditorialMetadata(BaseModel):
     category: str
     sector: str
@@ -9,6 +29,7 @@ class ArchiveEditorialMetadata(BaseModel):
     preceding_titles: list[str] = Field(min_length=3, max_length=3)
     competencies: list[str] = Field(min_length=4, max_length=4)
     outlook: str
+    sector_breakdown: list[ArchiveSectorBreakdown] = Field(default_factory=list)
     image_prompt: str | None = None
     image_path: str | None = None
     image_provider: str | None = None
