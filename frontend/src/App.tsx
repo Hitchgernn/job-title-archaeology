@@ -332,6 +332,7 @@ export default function App() {
   const [dossier, setDossier] = useState<DossierResponse | null>(null)
   const [view, setView] = useState<View>(() => viewFromHash())
   const [error, setError] = useState<string | null>(null)
+  const [archiveReturnHash, setArchiveReturnHash] = useState('#/')
 
   useEffect(() => {
     const syncView = () => setView(viewFromHash())
@@ -358,10 +359,13 @@ export default function App() {
     if (!archive) return <StatePanel>Opening archive...</StatePanel>
     if (view.name === 'dossier') {
       if (!dossier) return <StatePanel>Retrieving dossier...</StatePanel>
-      return <DossierPage dossier={dossier} onArchive={() => pushView({ name: 'archive' })} />
+      return <DossierPage dossier={dossier} onArchive={() => { window.location.hash = archiveReturnHash }} />
     }
-    return <ArchivePage data={archive} onOpen={(recordId) => pushView({ name: 'dossier', recordId })} />
-  }, [archive, dossier, error, view])
+    return <ArchivePage data={archive} onOpen={(recordId) => {
+      setArchiveReturnHash(window.location.hash || '#/')
+      pushView({ name: 'dossier', recordId })
+    }} />
+  }, [archive, archiveReturnHash, dossier, error, view])
 
   return (
     <main className="archive-shell">

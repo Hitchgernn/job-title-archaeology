@@ -6,22 +6,22 @@ import App from './App'
 
 const imagePath = '/archive-generated/10-ai-workflow-architect.png'
 
+const archiveRecord = {
+  record_id: 'ai-workflow-architect',
+  title: 'AI Workflow Architect',
+  category: 'TECH',
+  first_seen_label: '2025 Q4',
+  velocity_label: 'Rapid ascent',
+  score: 0.92,
+  recent_count: 12,
+  prior_count: 1,
+  early_mover_companies: ['Acme', 'Globex'],
+  excerpt: 'AI workflow roles are emerging.',
+  image_path: imagePath,
+}
+
 const archivePayload = {
-  records: [
-    {
-      record_id: 'ai-workflow-architect',
-      title: 'AI Workflow Architect',
-      category: 'TECH',
-      first_seen_label: '2025 Q4',
-      velocity_label: 'Rapid ascent',
-      score: 0.92,
-      recent_count: 12,
-      prior_count: 1,
-      early_mover_companies: ['Acme', 'Globex'],
-      excerpt: 'AI workflow roles are emerging.',
-      image_path: imagePath,
-    },
-  ],
+  records: [archiveRecord],
   summary: {
     total_records: 1,
     category_counts: { TECH: 1 },
@@ -82,6 +82,27 @@ describe('App', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/archive/titles/ai-workflow-architect?limit=10'))
     const image = await screen.findByAltText('AI Workflow Architect archival illustration')
     expect(image).toHaveAttribute('src', imagePath)
+  })
+
+  it('returns to the same archive page after opening a dossier', async () => {
+    const records = Array.from({ length: 4 }, (_, index) => ({
+      ...archiveRecord,
+      record_id: `record-${index + 1}`,
+      title: `Record ${index + 1}`,
+    }))
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ...archivePayload, records }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ...dossierPayload, ...records[3] }) })
+    vi.stubGlobal('fetch', fetchMock)
+    window.location.hash = '#/?page=2'
+
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Record 4' }))
+    await screen.findByText('A new operational layer enters the archive.')
+    fireEvent.click(screen.getByRole('button', { name: /back to archive/i }))
+
+    await screen.findByRole('button', { name: 'Record 4' })
+    expect(screen.getByText('Archive Page 02 / 02')).toBeInTheDocument()
   })
 
   it('renders empty state', async () => {
