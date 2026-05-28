@@ -13,7 +13,7 @@ ARCHIVE_SOURCE = "brightdata_web_scraper"
 
 
 @router.get("/titles", response_model=ArchiveResponse)
-def archive_titles(limit: int = Query(10, ge=1, le=50)) -> ArchiveResponse:
+def archive_titles(limit: int = Query(50, ge=1, le=200)) -> ArchiveResponse:
     connection = open_connection()
     try:
         run_migrations(connection)
@@ -25,7 +25,7 @@ def archive_titles(limit: int = Query(10, ge=1, le=50)) -> ArchiveResponse:
 
 
 @router.get("/titles/{record_id}", response_model=DossierResponse)
-def archive_dossier(record_id: str, limit: int = Query(10, ge=1, le=50)) -> DossierResponse:
+def archive_dossier(record_id: str, limit: int = Query(50, ge=1, le=200)) -> DossierResponse:
     connection = open_connection()
     try:
         run_migrations(connection)

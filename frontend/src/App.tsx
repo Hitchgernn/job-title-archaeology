@@ -340,7 +340,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    fetchArchiveTitles(10)
+    fetchArchiveTitles(50)
       .then(setArchive)
       .catch((err: Error) => setError(err.message))
   }, [])
@@ -348,7 +348,7 @@ export default function App() {
   useEffect(() => {
     if (view.name !== 'dossier') return
     setDossier(null)
-    fetchArchiveDossier(view.recordId, 10)
+    fetchArchiveDossier(view.recordId, 50)
       .then(setDossier)
       .catch((err: Error) => setError(err.message))
   }, [view])
