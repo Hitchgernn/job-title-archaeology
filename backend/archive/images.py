@@ -1,8 +1,35 @@
+import os
 import re
 from pathlib import Path
 
+from google import genai
+
 from backend.archive.models import ArchiveEditorialMetadata
 from backend.trends.models import TrendResult
+
+
+class ImageProviderError(RuntimeError):
+    pass
+
+
+class GeminiImageProvider:
+    def __init__(self, api_key: str | None = None, model: str | None = None):
+        resolved_key = api_key or os.getenv("GEMINI_API_KEY")
+        if not resolved_key:
+            raise ImageProviderError("GEMINI_API_KEY is required")
+
+        self.model = model or os.getenv(
+            "GEMINI_IMAGE_MODEL", "gemini-2.5-flash-image-preview"
+        )
+        self.client = genai.Client(api_key=resolved_key)
+
+    def generate(self, prompt: str) -> bytes:
+        response = self.client.models.generate_content(model=self.model, contents=prompt)
+        for candidate in response.candidates:
+            for part in candidate.content.parts:
+                if getattr(part, "inline_data", None) is not None:
+                    return part.inline_data.data
+        raise ImageProviderError("Gemini response did not include image bytes")
 
 
 def image_filename(trend: TrendResult) -> str:

@@ -1,6 +1,14 @@
+from unittest.mock import Mock, patch
+
 import pytest
 
-from backend.archive.images import build_archive_image_prompt, image_filename, save_image_bytes
+from backend.archive.images import (
+    GeminiImageProvider,
+    ImageProviderError,
+    build_archive_image_prompt,
+    image_filename,
+    save_image_bytes,
+)
 from backend.archive.models import ArchiveEditorialMetadata
 from backend.trends.models import TrendResult, TrendScores
 
@@ -54,3 +62,29 @@ def test_save_image_bytes_writes_public_path(tmp_path):
 def test_save_image_bytes_rejects_path_traversal(tmp_path):
     with pytest.raises(ValueError):
         save_image_bytes(tmp_path, "../bad.png", b"png-bytes")
+
+
+def test_gemini_image_provider_returns_first_inline_image(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    mock_client = Mock()
+    mock_response = Mock()
+    mock_response.candidates = [Mock()]
+    mock_response.candidates[0].content.parts = [Mock()]
+    mock_response.candidates[0].content.parts[0].inline_data.data = b"image-bytes"
+    mock_client.models.generate_content.return_value = mock_response
+
+    with patch("backend.archive.images.genai.Client", return_value=mock_client):
+        provider = GeminiImageProvider(model="gemini-2.5-flash-image-preview")
+        result = provider.generate("prompt")
+
+    assert result == b"image-bytes"
+    mock_client.models.generate_content.assert_called_once_with(
+        model="gemini-2.5-flash-image-preview", contents="prompt"
+    )
+
+
+def test_gemini_image_provider_requires_api_key(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+
+    with pytest.raises(ImageProviderError, match="GEMINI_API_KEY is required"):
+        GeminiImageProvider()
