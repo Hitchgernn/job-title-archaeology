@@ -56,13 +56,13 @@ describe('App', () => {
     expect(screen.getByText(/opening archive/i)).toBeInTheDocument()
   })
 
-  it('renders archive record image from image_path', async () => {
+  it('does not render archive record image on the list page', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => archivePayload }))
 
     render(<App />)
 
-    const image = await screen.findByAltText('AI Workflow Architect archival illustration')
-    expect(image).toHaveAttribute('src', imagePath)
+    await screen.findByRole('button', { name: 'AI Workflow Architect' })
+    expect(document.querySelector('.record-illustration')).not.toBeInTheDocument()
   })
 
   it('renders dossier image from image_path', async () => {

@@ -207,17 +207,6 @@ button {
   color: #444748;
 }
 
-.record-illustration {
-  grid-row: 2 / 5;
-  width: 132px;
-  height: 154px;
-  align-self: start;
-  border: 1px solid #747878;
-  background: #f1edec;
-  filter: grayscale(1) contrast(1.16);
-  object-fit: cover;
-}
-
 .result-meta span:first-child {
   background: #ffdad4;
   padding: 4px 7px;
