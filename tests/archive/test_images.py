@@ -78,9 +78,25 @@ def test_gemini_image_provider_returns_first_inline_image(monkeypatch):
         result = provider.generate("prompt")
 
     assert result == b"image-bytes"
-    mock_client.models.generate_content.assert_called_once_with(
-        model="gemini-2.5-flash-image-preview", contents="prompt"
-    )
+    mock_client.models.generate_content.assert_called_once()
+    call_kwargs = mock_client.models.generate_content.call_args.kwargs
+    assert call_kwargs["model"] == "gemini-2.5-flash-image-preview"
+    assert call_kwargs["contents"] == "prompt"
+    assert call_kwargs["config"].response_modalities == ["TEXT", "IMAGE"]
+
+
+@pytest.mark.parametrize("candidates", [None, []])
+def test_gemini_image_provider_rejects_empty_response(monkeypatch, candidates):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    mock_client = Mock()
+    mock_response = Mock()
+    mock_response.candidates = candidates
+    mock_client.models.generate_content.return_value = mock_response
+
+    with patch("backend.archive.images.genai.Client", return_value=mock_client):
+        provider = GeminiImageProvider(model="gemini-2.5-flash-image-preview")
+        with pytest.raises(ImageProviderError, match="Gemini response did not include image bytes"):
+            provider.generate("prompt")
 
 
 def test_gemini_image_provider_requires_api_key(monkeypatch):

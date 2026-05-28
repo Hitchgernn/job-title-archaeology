@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 
 from google import genai
+from google.genai import types
 
 from backend.archive.models import ArchiveEditorialMetadata
 from backend.trends.models import TrendResult
@@ -24,9 +25,14 @@ class GeminiImageProvider:
         self.client = genai.Client(api_key=resolved_key)
 
     def generate(self, prompt: str) -> bytes:
-        response = self.client.models.generate_content(model=self.model, contents=prompt)
-        for candidate in response.candidates:
-            for part in candidate.content.parts:
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt,
+            config=types.GenerateContentConfig(response_modalities=["TEXT", "IMAGE"]),
+        )
+        for candidate in response.candidates or []:
+            content = getattr(candidate, "content", None)
+            for part in getattr(content, "parts", None) or []:
                 if getattr(part, "inline_data", None) is not None:
                     return part.inline_data.data
         raise ImageProviderError("Gemini response did not include image bytes")
