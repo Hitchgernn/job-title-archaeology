@@ -184,9 +184,8 @@ button {
 
 .archive-result {
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto 1fr auto;
-  column-gap: 20px;
   height: 232px;
   overflow: hidden;
   border-bottom: 1px solid #c4c7c7;
