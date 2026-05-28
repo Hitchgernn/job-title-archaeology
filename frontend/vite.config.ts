@@ -7,8 +7,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/archive': apiTarget,
-      '/dashboard': apiTarget,
+      '^/archive(/|$)': apiTarget,
+      '^/dashboard(/|$)': apiTarget,
     },
   },
 })
