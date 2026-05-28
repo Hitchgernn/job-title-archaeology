@@ -136,8 +136,9 @@ button {
 }
 
 .filter-strip {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
   gap: 24px;
   border-bottom: 1px solid #c4c7c7;
   margin-bottom: 42px;
@@ -145,10 +146,13 @@ button {
 
 .filter-strip div {
   display: flex;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  white-space: nowrap;
 }
 
 .filter-strip button {
+  flex: 0 0 auto;
   border: 0;
   border-right: 1px solid #c4c7c7;
   border-bottom: 2px solid transparent;
@@ -166,10 +170,12 @@ button {
 }
 
 .filter-strip p {
+  max-width: 180px;
   margin: 0;
   padding: 14px 0 12px;
   color: #444748;
   font-style: italic;
+  text-align: right;
 }
 
 .archive-layout {

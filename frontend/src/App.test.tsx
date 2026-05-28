@@ -80,6 +80,38 @@ describe('App', () => {
     expect(image).toHaveAttribute('src', imagePath)
   })
 
+  it('groups overflow archive categories under Other', async () => {
+    const records = ['TECH / AI', 'HEALTHCARE', 'TECH / AI GOVERNANCE', 'TECH / AUTOMATION', 'HEALTHCARE / PHARMACEUTICALS', 'TECH / OPERATIONS'].map((category, index) => ({
+      ...archiveRecord,
+      record_id: `category-record-${index + 1}`,
+      title: `Category Record ${index + 1}`,
+      category,
+    }))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...archivePayload,
+        records,
+        summary: {
+          ...archivePayload.summary,
+          category_counts: Object.fromEntries(records.map((record) => [record.category, 1])),
+        },
+      }),
+    }))
+
+    render(<App />)
+
+    await screen.findByRole('button', { name: 'OTHER' })
+    expect(screen.queryByRole('button', { name: 'HEALTHCARE / PHARMACEUTICALS' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'TECH / OPERATIONS' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'OTHER' }))
+
+    await screen.findByRole('button', { name: 'Category Record 5' })
+    expect(screen.getByRole('button', { name: 'Category Record 6' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Category Record 1' })).not.toBeInTheDocument()
+  })
+
   it('returns to the same archive page after opening a dossier', async () => {
     const records = Array.from({ length: 4 }, (_, index) => ({
       ...archiveRecord,

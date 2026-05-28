@@ -6,6 +6,8 @@ import type { AdoptionPoint, ArchiveRecord, ArchiveResponse, DossierResponse, Er
 
 const EDITION = 'Vol. 1 · Issue 47'
 const PAGE_SIZE = 3
+const VISIBLE_CATEGORY_LIMIT = 4
+const OTHER_CATEGORY = 'OTHER'
 const TODAY = new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())
 
 type View = { name: 'archive' } | { name: 'dossier'; recordId: string }
@@ -139,11 +141,14 @@ function ArchivePage({ data, onOpen }: { data: ArchiveResponse; onOpen: (recordI
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('ALL')
   const [page, setPage] = useState(() => archivePageFromHash())
-  const categories = ['ALL', ...Object.keys(data.summary.category_counts)]
+  const allCategories = Object.keys(data.summary.category_counts)
+  const visibleCategories = allCategories.slice(0, VISIBLE_CATEGORY_LIMIT)
+  const overflowCategories = allCategories.slice(VISIBLE_CATEGORY_LIMIT)
+  const categories = ['ALL', ...visibleCategories, ...(overflowCategories.length ? [OTHER_CATEGORY] : [])]
   const filtered = data.records.filter((record) => {
     const text = `${record.title} ${record.category} ${record.early_mover_companies.join(' ')}`.toLowerCase()
     const matchesQuery = text.includes(query.toLowerCase())
-    const matchesCategory = category === 'ALL' || record.category === category
+    const matchesCategory = category === 'ALL' || record.category === category || (category === OTHER_CATEGORY && overflowCategories.includes(record.category))
     return matchesQuery && matchesCategory
   })
   const pageCount = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1)
