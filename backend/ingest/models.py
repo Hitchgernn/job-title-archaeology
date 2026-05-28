@@ -14,6 +14,7 @@ class NormalizedPreview(BaseModel):
     location: str | None = None
     url: str | None = None
     posted_at: str | None = None
+    posting_id: str | None = None
 
 
 class RawJobPostingEnvelope(BaseModel):
@@ -52,6 +53,7 @@ def map_raw_posting(
             company=_first_present(raw, ("company_name", "company", "employer", "company_url_text")),
             location=_first_present(raw, ("location", "job_location", "city", "country", "formatted_location")),
             url=_first_present(raw, ("url", "job_url", "apply_url", "apply_link", "job_posting_url", "link")),
-            posted_at=_first_present(raw, ("date_posted", "date_posted_parsed", "posted_at", "posted_date", "job_posted_date", "published_at", "created_at")),
+            posted_at=_first_present(raw, ("date_posted_parsed", "posted_at", "posted_date", "job_posted_date", "published_at", "created_at", "date_posted")),
+            posting_id=_first_present(raw, ("jobid", "job_posting_id", "job_id", "id", "posting_id")),
         ),
     )

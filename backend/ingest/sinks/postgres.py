@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS raw_job_postings (
     location TEXT,
     url TEXT,
     posted_at TEXT,
+    posting_id TEXT,
     raw JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 )
@@ -39,8 +40,9 @@ INSERT INTO raw_job_postings (
     location,
     url,
     posted_at,
+    posting_id,
     raw
-) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 ON CONFLICT DO NOTHING
 """
 
@@ -56,8 +58,9 @@ INSERT INTO raw_job_postings (
     location,
     url,
     posted_at,
+    posting_id,
     raw
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT DO NOTHING
 """
 
@@ -76,6 +79,20 @@ FROM raw_job_postings
 WHERE source = ?
   AND (title_key = ? OR lower(trim(title)) = ?)
   AND (company_key = ? OR lower(trim(company)) = ?)
+LIMIT 1
+"""
+
+_POSTING_ID_EXISTS_SQL = """
+SELECT 1
+FROM raw_job_postings
+WHERE source = %s AND posting_id = %s
+LIMIT 1
+"""
+
+_SQLITE_POSTING_ID_EXISTS_SQL = """
+SELECT 1
+FROM raw_job_postings
+WHERE source = ? AND posting_id = ?
 LIMIT 1
 """
 
@@ -98,6 +115,13 @@ def row_exists(cursor, sql: str, source: str, title_key: str | None, company_key
     return cursor.fetchone() is not None
 
 
+def posting_id_exists(cursor, sql: str, source: str, posting_id: str | None) -> bool:
+    if not posting_id:
+        return False
+    cursor.execute(sql, (source, posting_id))
+    return cursor.fetchone() is not None
+
+
 def load_raw_postings(database_url: str, records: Sequence[RawJobPostingEnvelope]) -> int:
     if is_sqlite_url(database_url):
         connection = open_connection(database_url)
@@ -110,7 +134,10 @@ def load_raw_postings(database_url: str, records: Sequence[RawJobPostingEnvelope
                     preview = record.normalized_preview
                     title_key = dedupe_key(preview.title)
                     company_key = dedupe_key(preview.company)
-                    if row_exists(cursor, _SQLITE_EXISTS_SQL, record.source, title_key, company_key):
+                    posting_id = preview.posting_id
+                    if posting_id and posting_id_exists(cursor, _SQLITE_POSTING_ID_EXISTS_SQL, record.source, posting_id):
+                        continue
+                    if not posting_id and row_exists(cursor, _SQLITE_EXISTS_SQL, record.source, title_key, company_key):
                         continue
                     cursor.execute(
                         _SQLITE_INSERT_SQL,
@@ -125,6 +152,7 @@ def load_raw_postings(database_url: str, records: Sequence[RawJobPostingEnvelope
                             preview.location,
                             preview.url,
                             preview.posted_at,
+                            posting_id,
                             json.dumps(record.raw),
                         ),
                     )
@@ -148,7 +176,10 @@ def load_raw_postings(database_url: str, records: Sequence[RawJobPostingEnvelope
                 preview = record.normalized_preview
                 title_key = dedupe_key(preview.title)
                 company_key = dedupe_key(preview.company)
-                if row_exists(cursor, _EXISTS_SQL, record.source, title_key, company_key):
+                posting_id = preview.posting_id
+                if posting_id and posting_id_exists(cursor, _POSTING_ID_EXISTS_SQL, record.source, posting_id):
+                    continue
+                if not posting_id and row_exists(cursor, _EXISTS_SQL, record.source, title_key, company_key):
                     continue
                 cursor.execute(
                     _INSERT_SQL,
@@ -163,6 +194,7 @@ def load_raw_postings(database_url: str, records: Sequence[RawJobPostingEnvelope
                         preview.location,
                         preview.url,
                         preview.posted_at,
+                        posting_id,
                         Jsonb(record.raw),
                     ),
                 )

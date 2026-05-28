@@ -125,18 +125,22 @@ CREATE TABLE IF NOT EXISTS archive_metadata_cache (
 POSTGRES_ALTER_SQL = [
     "ALTER TABLE raw_job_postings ADD COLUMN IF NOT EXISTS title_key TEXT",
     "ALTER TABLE raw_job_postings ADD COLUMN IF NOT EXISTS company_key TEXT",
+    "ALTER TABLE raw_job_postings ADD COLUMN IF NOT EXISTS posting_id TEXT",
 ]
 
 SQLITE_ALTER_SQL = [
     "ALTER TABLE raw_job_postings ADD COLUMN title_key TEXT",
     "ALTER TABLE raw_job_postings ADD COLUMN company_key TEXT",
+    "ALTER TABLE raw_job_postings ADD COLUMN posting_id TEXT",
 ]
 
 INDEX_SQL = [
     "CREATE INDEX IF NOT EXISTS idx_raw_job_postings_source_run_id ON raw_job_postings(source_run_id)",
     "CREATE INDEX IF NOT EXISTS idx_raw_job_postings_scraped_at ON raw_job_postings(scraped_at)",
     "CREATE INDEX IF NOT EXISTS idx_raw_job_postings_title ON raw_job_postings(title)",
-    "CREATE UNIQUE INDEX IF NOT EXISTS idx_raw_job_postings_source_title_company_key ON raw_job_postings(source, title_key, company_key) WHERE title_key IS NOT NULL AND company_key IS NOT NULL",
+    "CREATE INDEX IF NOT EXISTS idx_raw_job_postings_posted_at ON raw_job_postings(posted_at)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_raw_job_postings_source_posting_id ON raw_job_postings(source, posting_id) WHERE posting_id IS NOT NULL",
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_raw_job_postings_source_title_company_key ON raw_job_postings(source, title_key, company_key) WHERE title_key IS NOT NULL AND company_key IS NOT NULL AND posting_id IS NULL",
 ]
 
 
