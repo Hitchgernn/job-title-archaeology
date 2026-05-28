@@ -9,6 +9,10 @@ class ArchiveEditorialMetadata(BaseModel):
     preceding_titles: list[str] = Field(min_length=3, max_length=3)
     competencies: list[str] = Field(min_length=4, max_length=4)
     outlook: str
+    image_prompt: str | None = None
+    image_path: str | None = None
+    image_provider: str | None = None
+    image_model: str | None = None
 
     @field_validator("category", "sector", "lead_paragraph", "pull_quote", "outlook")
     @classmethod
@@ -38,6 +42,7 @@ class ArchiveRecord(BaseModel):
     prior_count: int
     early_mover_companies: list[str] = Field(default_factory=list)
     excerpt: str
+    image_path: str | None = None
 
 
 class EraDensity(BaseModel):

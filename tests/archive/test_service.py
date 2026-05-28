@@ -103,9 +103,28 @@ def test_build_archive_response_uses_cached_metadata() -> None:
     assert "Generated metadata" in response.records[0].excerpt
 
 
+def test_build_archive_response_uses_cached_image_path() -> None:
+    path = "/archive-generated/ai-workflow-architect.png"
+    metadata = make_metadata().model_copy(update={"image_path": path})
+
+    response = build_archive_response([make_trend()], {10: metadata})
+
+    assert response.records[0].image_path == path
+
+
 def test_build_dossier_response_uses_cached_metadata() -> None:
     dossier = build_dossier_response([make_trend()], "JTA-0001-AI-WORKFLOW-ARCHITECT", {10: make_metadata()})
 
     assert dossier is not None
     assert dossier.category == "Tech / LLM"
     assert dossier.preceding_titles == ["Solutions Architect", "AI Engineer", "Platform Lead"]
+
+
+def test_build_dossier_response_uses_cached_image_path() -> None:
+    path = "/archive-generated/ai-workflow-architect.png"
+    metadata = make_metadata().model_copy(update={"image_path": path})
+
+    dossier = build_dossier_response([make_trend()], "JTA-0001-AI-WORKFLOW-ARCHITECT", {10: metadata})
+
+    assert dossier is not None
+    assert dossier.image_path == path

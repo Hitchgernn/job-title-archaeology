@@ -225,6 +225,7 @@ def build_record_metadata(trend: TrendResult, rank: int, metadata: ArchiveEditor
         prior_count=trend.prior_count,
         early_mover_companies=trend.early_mover_companies,
         excerpt=metadata.lead_paragraph.split(". ", 1)[0] + ".",
+        image_path=metadata.image_path,
     )
 
 
