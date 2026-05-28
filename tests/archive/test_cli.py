@@ -69,3 +69,57 @@ def test_generate_force_regenerates_cached_metadata() -> None:
     assert "cached archive metadata for 1 titles; skipped 0" in result.stdout
     fetch_cached.assert_not_called()
     upsert.assert_called_once()
+
+
+def test_generate_images_skips_cached_image(tmp_path) -> None:
+    connection = MagicMock()
+    provider = MagicMock()
+    runner = CliRunner()
+    metadata = make_metadata().model_copy(
+        update={"image_path": "/archive-generated/10-ai-workflow-architect.png"}
+    )
+
+    with patch("backend.archive.cli.open_connection", return_value=connection), patch(
+        "backend.archive.cli.GeminiImageProvider", return_value=provider
+    ), patch("backend.archive.cli.run_trend_scoring", return_value=[make_trend()]), patch(
+        "backend.archive.cli.fetch_cached_metadata", return_value={10: metadata}
+    ), patch("backend.archive.cli.update_cached_image") as update_cached:
+        result = runner.invoke(
+            app, ["generate-images", "--limit", "10", "--output-dir", str(tmp_path)]
+        )
+
+    assert result.exit_code == 0
+    assert "generated 0 images; skipped 1" in result.stdout
+    provider.generate.assert_not_called()
+    update_cached.assert_not_called()
+
+
+def test_generate_images_force_writes_image_and_updates_cache(tmp_path) -> None:
+    connection = MagicMock()
+    provider = MagicMock()
+    provider.model = "gemini-image"
+    provider.generate.return_value = b"image-bytes"
+    runner = CliRunner()
+    metadata = make_metadata().model_copy(update={"image_path": "/archive-generated/old.png"})
+
+    with patch("backend.archive.cli.open_connection", return_value=connection), patch(
+        "backend.archive.cli.GeminiImageProvider", return_value=provider
+    ), patch("backend.archive.cli.run_trend_scoring", return_value=[make_trend()]), patch(
+        "backend.archive.cli.fetch_cached_metadata", return_value={10: metadata}
+    ), patch("backend.archive.cli.update_cached_image") as update_cached:
+        result = runner.invoke(
+            app,
+            [
+                "generate-images",
+                "--limit",
+                "10",
+                "--output-dir",
+                str(tmp_path),
+                "--force",
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert "generated 1 images; skipped 0" in result.stdout
+    assert (tmp_path / "10-ai-workflow-architect.png").read_bytes() == b"image-bytes"
+    update_cached.assert_called_once()
