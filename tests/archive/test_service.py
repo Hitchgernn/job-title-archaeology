@@ -15,9 +15,9 @@ def make_metadata() -> ArchiveEditorialMetadata:
     )
 
 
-def make_trend(title: str = "AI Workflow Architect") -> TrendResult:
+def make_trend(title: str = "AI Workflow Architect", normalized_title_id: int = 10) -> TrendResult:
     return TrendResult(
-        normalized_title_id=10,
+        normalized_title_id=normalized_title_id,
         display_title=title,
         token_key="ai|architect|workflow",
         recent_count=12,
@@ -28,14 +28,14 @@ def make_trend(title: str = "AI Workflow Architect") -> TrendResult:
     )
 
 
-def test_stable_record_id_uses_rank_and_title() -> None:
-    assert stable_record_id(1, "AI Workflow Architect") == "JTA-0001-AI-WORKFLOW-ARCHITECT"
+def test_stable_record_id_uses_normalized_title_id_and_title() -> None:
+    assert stable_record_id(10, "AI Workflow Architect") == "JTA-0010-AI-WORKFLOW-ARCHITECT"
 
 
 def test_build_record_metadata_uses_curated_title_data() -> None:
     metadata = build_record_metadata(make_trend(), rank=1)
 
-    assert metadata.record_id == "JTA-0001-AI-WORKFLOW-ARCHITECT"
+    assert metadata.record_id == "JTA-0010-AI-WORKFLOW-ARCHITECT"
     assert metadata.category == "TECH"
     assert metadata.category_detail == "Tech / Automation"
     assert metadata.categories == ["TECH"]
@@ -66,9 +66,9 @@ def test_cross_sector_archive_metadata() -> None:
 
 
 def test_unknown_title_gets_deterministic_fallback_metadata() -> None:
-    dossier = build_dossier_metadata(make_trend("Quantum Payroll Cartographer"), rank=2)
+    dossier = build_dossier_metadata(make_trend("Quantum Payroll Cartographer", normalized_title_id=20), rank=2)
 
-    assert dossier.record_id == "JTA-0002-QUANTUM-PAYROLL-CARTOGRAPHER"
+    assert dossier.record_id == "JTA-0020-QUANTUM-PAYROLL-CARTOGRAPHER"
     assert dossier.category == "TECH"
     assert dossier.category_detail == "Tech / Operations"
     assert dossier.categories == ["TECH"]
@@ -81,21 +81,21 @@ from backend.archive.service import build_archive_response, build_dossier_respon
 
 
 def test_build_archive_response_summarizes_records() -> None:
-    response = build_archive_response([make_trend(), make_trend("Agent Operations Lead")])
+    response = build_archive_response([make_trend(), make_trend("Agent Operations Lead", normalized_title_id=20)])
 
     assert len(response.records) == 2
     assert response.summary.total_records == 2
     assert response.summary.category_counts == {"TECH": 2}
     assert response.summary.era_density[0].label == "Era 2020-26"
-    assert response.records[0].record_id == "JTA-0001-AI-WORKFLOW-ARCHITECT"
+    assert response.records[0].record_id == "JTA-0010-AI-WORKFLOW-ARCHITECT"
 
 
 def test_build_dossier_response_finds_record_by_id() -> None:
-    dossier = build_dossier_response([make_trend(), make_trend("Agent Operations Lead")], "JTA-0002-AGENT-OPERATIONS-LEAD")
+    dossier = build_dossier_response([make_trend(), make_trend("Agent Operations Lead", normalized_title_id=20)], "JTA-0020-AGENT-OPERATIONS-LEAD")
 
     assert dossier is not None
     assert dossier.title == "Agent Operations Lead"
-    assert dossier.record_id == "JTA-0002-AGENT-OPERATIONS-LEAD"
+    assert dossier.record_id == "JTA-0020-AGENT-OPERATIONS-LEAD"
 
 
 def test_build_dossier_response_returns_none_for_unknown_id() -> None:
@@ -120,7 +120,7 @@ def test_build_archive_response_uses_cached_image_path() -> None:
 
 
 def test_build_dossier_response_uses_cached_metadata() -> None:
-    dossier = build_dossier_response([make_trend()], "JTA-0001-AI-WORKFLOW-ARCHITECT", {10: make_metadata()})
+    dossier = build_dossier_response([make_trend()], "JTA-0010-AI-WORKFLOW-ARCHITECT", {10: make_metadata()})
 
     assert dossier is not None
     assert dossier.category == "TECH"
@@ -133,7 +133,7 @@ def test_build_dossier_response_uses_cached_image_path() -> None:
     path = "/archive-generated/ai-workflow-architect.png"
     metadata = make_metadata().model_copy(update={"image_path": path})
 
-    dossier = build_dossier_response([make_trend()], "JTA-0001-AI-WORKFLOW-ARCHITECT", {10: metadata})
+    dossier = build_dossier_response([make_trend()], "JTA-0010-AI-WORKFLOW-ARCHITECT", {10: metadata})
 
     assert dossier is not None
     assert dossier.image_path == path

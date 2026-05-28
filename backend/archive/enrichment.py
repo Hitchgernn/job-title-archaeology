@@ -159,9 +159,9 @@ CURATED_METADATA: dict[str, EditorialMetadata] = {
 }
 
 
-def stable_record_id(rank: int, title: str) -> str:
+def stable_record_id(normalized_title_id: int, title: str) -> str:
     slug = re.sub(r"[^A-Z0-9]+", "-", title.upper()).strip("-")
-    return f"JTA-{rank:04d}-{slug}"
+    return f"JTA-{normalized_title_id:04d}-{slug}"
 
 
 def _metadata_for(title: str) -> ArchiveEditorialMetadata:
@@ -250,7 +250,7 @@ def build_record_metadata(trend: TrendResult, rank: int, metadata: ArchiveEditor
     metadata = metadata or _metadata_for(trend.display_title)
     categories = broad_categories_for(metadata)
     return ArchiveRecord(
-        record_id=stable_record_id(rank, trend.display_title),
+        record_id=stable_record_id(trend.normalized_title_id, trend.display_title),
         title=trend.display_title,
         category=categories[0],
         category_detail=metadata.category,

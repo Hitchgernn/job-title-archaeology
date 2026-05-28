@@ -8,9 +8,9 @@ from backend.trends.models import TrendResult, TrendScores
 client = TestClient(app)
 
 
-def make_trend(title: str = "AI Workflow Architect") -> TrendResult:
+def make_trend(title: str = "AI Workflow Architect", normalized_title_id: int = 10) -> TrendResult:
     return TrendResult(
-        normalized_title_id=10,
+        normalized_title_id=normalized_title_id,
         display_title=title,
         token_key="ai|architect|workflow",
         recent_count=12,
@@ -31,7 +31,7 @@ def test_archive_titles_returns_records() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["summary"]["total_records"] == 1
-    assert payload["records"][0]["record_id"] == "JTA-0001-AI-WORKFLOW-ARCHITECT"
+    assert payload["records"][0]["record_id"] == "JTA-0010-AI-WORKFLOW-ARCHITECT"
     connection.close.assert_called_once()
 
 
@@ -49,14 +49,16 @@ def test_archive_titles_does_not_instantiate_gemini_provider() -> None:
 def test_archive_dossier_returns_selected_record() -> None:
     connection = MagicMock()
     with patch("backend.archive.router.open_connection", return_value=connection), patch(
-        "backend.archive.router.run_trend_scoring", return_value=[make_trend(), make_trend("Agent Operations Lead")]
-    ), patch("backend.archive.router.fetch_cached_metadata", return_value={}):
-        response = client.get("/archive/titles/JTA-0002-AGENT-OPERATIONS-LEAD?limit=5")
+        "backend.archive.router.run_trend_scoring", return_value=[make_trend(), make_trend("Agent Operations Lead", normalized_title_id=20)]
+    ), patch("backend.archive.router.fetch_cached_metadata", return_value={}), patch(
+        "backend.archive.router.fetch_weekly_counts_map", return_value={}
+    ):
+        response = client.get("/archive/titles/JTA-0020-AGENT-OPERATIONS-LEAD?limit=5")
 
     assert response.status_code == 200
     payload = response.json()
     assert payload["title"] == "Agent Operations Lead"
-    assert payload["record_id"] == "JTA-0002-AGENT-OPERATIONS-LEAD"
+    assert payload["record_id"] == "JTA-0020-AGENT-OPERATIONS-LEAD"
     assert payload["pull_quote"]
 
 
@@ -64,7 +66,9 @@ def test_archive_dossier_returns_404_for_unknown_record() -> None:
     connection = MagicMock()
     with patch("backend.archive.router.open_connection", return_value=connection), patch(
         "backend.archive.router.run_trend_scoring", return_value=[make_trend()]
-    ), patch("backend.archive.router.fetch_cached_metadata", return_value={}):
+    ), patch("backend.archive.router.fetch_cached_metadata", return_value={}), patch(
+        "backend.archive.router.fetch_weekly_counts_map", return_value={}
+    ):
         response = client.get("/archive/titles/JTA-9999-NOPE?limit=5")
 
     assert response.status_code == 404
