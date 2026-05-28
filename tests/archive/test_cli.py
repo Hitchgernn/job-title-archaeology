@@ -71,17 +71,18 @@ def test_generate_force_regenerates_cached_metadata() -> None:
     upsert.assert_called_once()
 
 
-def test_generate_images_skips_cached_image(tmp_path) -> None:
+def test_generate_images_skips_cached_image_without_provider(tmp_path) -> None:
     connection = MagicMock()
-    provider = MagicMock()
     runner = CliRunner()
     metadata = make_metadata().model_copy(
         update={"image_path": "/archive-generated/10-ai-workflow-architect.png"}
     )
 
     with patch("backend.archive.cli.open_connection", return_value=connection), patch(
-        "backend.archive.cli.GeminiImageProvider", return_value=provider
-    ), patch("backend.archive.cli.run_trend_scoring", return_value=[make_trend()]), patch(
+        "backend.archive.cli.GeminiImageProvider"
+    ) as provider_class, patch(
+        "backend.archive.cli.run_trend_scoring", return_value=[make_trend()]
+    ), patch(
         "backend.archive.cli.fetch_cached_metadata", return_value={10: metadata}
     ), patch("backend.archive.cli.update_cached_image") as update_cached:
         result = runner.invoke(
@@ -90,7 +91,28 @@ def test_generate_images_skips_cached_image(tmp_path) -> None:
 
     assert result.exit_code == 0
     assert "generated 0 images; skipped 1" in result.stdout
-    provider.generate.assert_not_called()
+    provider_class.assert_not_called()
+    update_cached.assert_not_called()
+
+
+def test_generate_images_skips_missing_metadata_without_provider(tmp_path) -> None:
+    connection = MagicMock()
+    runner = CliRunner()
+
+    with patch("backend.archive.cli.open_connection", return_value=connection), patch(
+        "backend.archive.cli.GeminiImageProvider"
+    ) as provider_class, patch(
+        "backend.archive.cli.run_trend_scoring", return_value=[make_trend()]
+    ), patch(
+        "backend.archive.cli.fetch_cached_metadata", return_value={}
+    ), patch("backend.archive.cli.update_cached_image") as update_cached:
+        result = runner.invoke(
+            app, ["generate-images", "--limit", "10", "--output-dir", str(tmp_path)]
+        )
+
+    assert result.exit_code == 0
+    assert "generated 0 images; skipped 1" in result.stdout
+    provider_class.assert_not_called()
     update_cached.assert_not_called()
 
 

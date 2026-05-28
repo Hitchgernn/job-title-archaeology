@@ -76,7 +76,7 @@ def generate_images(
     skipped = 0
     try:
         run_migrations(connection)
-        provider = GeminiImageProvider()
+        provider = None
         trends = run_trend_scoring(connection, limit=limit, source=ARCHIVE_SOURCE)
         cached = fetch_cached_metadata(
             connection,
@@ -91,6 +91,8 @@ def generate_images(
             if metadata.image_path and not force:
                 skipped += 1
                 continue
+            if provider is None:
+                provider = GeminiImageProvider()
             prompt = build_archive_image_prompt(trend, metadata)
             image_path = save_image_bytes(
                 output_dir,
