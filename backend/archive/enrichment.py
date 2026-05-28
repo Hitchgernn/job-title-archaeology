@@ -16,6 +16,25 @@ class EditorialMetadata:
     outlook: str
 
 
+BROAD_CATEGORIES = ("TECH", "FINANCE", "HEALTHCARE", "MANUFACTURING", "PUBLIC SECTOR", "OTHER")
+
+
+def broad_categories_for(metadata: ArchiveEditorialMetadata) -> list[str]:
+    text = f"{metadata.category} {metadata.sector}".upper()
+    categories: list[str] = []
+    if "TECH" in text or "AI" in text or "AUTOMATION" in text:
+        categories.append("TECH")
+    if "FINANCE" in text or "FINANCIAL" in text:
+        categories.append("FINANCE")
+    if "HEALTH" in text or "CLINICAL" in text or "MEDICAL" in text or "PHARMA" in text:
+        categories.append("HEALTHCARE")
+    if "MANUFACTUR" in text or "SUPPLY" in text or "ROBOT" in text:
+        categories.append("MANUFACTURING")
+    if "PUBLIC" in text or "GOVERNMENT" in text or "CIVIC" in text:
+        categories.append("PUBLIC SECTOR")
+    return categories or ["OTHER"]
+
+
 CURATED_METADATA: dict[str, EditorialMetadata] = {
     "AI Workflow Architect": EditorialMetadata(
         category="Tech / Automation",
@@ -214,10 +233,13 @@ def _early_adopters(trend: TrendResult) -> list[EarlyAdopter]:
 
 def build_record_metadata(trend: TrendResult, rank: int, metadata: ArchiveEditorialMetadata | None = None) -> ArchiveRecord:
     metadata = metadata or _metadata_for(trend.display_title)
+    categories = broad_categories_for(metadata)
     return ArchiveRecord(
         record_id=stable_record_id(rank, trend.display_title),
         title=trend.display_title,
-        category=metadata.category,
+        category=categories[0],
+        category_detail=metadata.category,
+        categories=categories,
         first_seen_label="May 2026 · Bright Data Corpus",
         velocity_label=_velocity_label(trend),
         score=trend.trend_score,

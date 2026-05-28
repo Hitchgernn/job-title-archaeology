@@ -9,6 +9,8 @@ const archiveRecord = {
   record_id: 'ai-workflow-architect',
   title: 'AI Workflow Architect',
   category: 'TECH',
+  category_detail: 'Tech / AI',
+  categories: ['TECH'],
   first_seen_label: '2025 Q4',
   velocity_label: 'Rapid ascent',
   score: 0.92,
@@ -48,12 +50,13 @@ afterEach(() => {
 })
 
 describe('App', () => {
-  it('renders loading state', () => {
+  it('renders loading state without decorative masthead categories', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
 
     render(<App />)
 
     expect(screen.getByText(/opening archive/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Archive sections')).not.toBeInTheDocument()
   })
 
   it('does not render archive record image on the list page', async () => {
@@ -80,13 +83,12 @@ describe('App', () => {
     expect(image).toHaveAttribute('src', imagePath)
   })
 
-  it('groups overflow archive categories under Other', async () => {
-    const records = ['TECH / AI', 'HEALTHCARE', 'TECH / AI GOVERNANCE', 'TECH / AUTOMATION', 'HEALTHCARE / PHARMACEUTICALS', 'TECH / OPERATIONS'].map((category, index) => ({
-      ...archiveRecord,
-      record_id: `category-record-${index + 1}`,
-      title: `Category Record ${index + 1}`,
-      category,
-    }))
+  it('filters by broad categories and supports multi-category records', async () => {
+    const records = [
+      { ...archiveRecord, record_id: 'tech-record', title: 'Tech Record', category: 'TECH', category_detail: 'Tech / AI', categories: ['TECH'] },
+      { ...archiveRecord, record_id: 'finance-health-record', title: 'Finance Health Record', category: 'FINANCE', category_detail: 'Healthcare / Finance', categories: ['FINANCE', 'HEALTHCARE'] },
+      { ...archiveRecord, record_id: 'other-record', title: 'Other Record', category: 'OTHER', category_detail: 'Education', categories: ['OTHER'] },
+    ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -94,22 +96,22 @@ describe('App', () => {
         records,
         summary: {
           ...archivePayload.summary,
-          category_counts: Object.fromEntries(records.map((record) => [record.category, 1])),
+          category_counts: { TECH: 1, FINANCE: 1, HEALTHCARE: 1, MANUFACTURING: 0, 'PUBLIC SECTOR': 0, OTHER: 1 },
         },
       }),
     }))
 
     render(<App />)
 
-    await screen.findByRole('button', { name: 'OTHER' })
-    expect(screen.queryByRole('button', { name: 'HEALTHCARE / PHARMACEUTICALS' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'TECH / OPERATIONS' })).not.toBeInTheDocument()
+    await screen.findByRole('button', { name: 'TECH' })
+    expect(screen.getByRole('button', { name: 'FINANCE' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'HEALTHCARE' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'TECH / AI' })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'OTHER' }))
+    fireEvent.click(screen.getByRole('button', { name: 'HEALTHCARE' }))
 
-    await screen.findByRole('button', { name: 'Category Record 5' })
-    expect(screen.getByRole('button', { name: 'Category Record 6' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Category Record 1' })).not.toBeInTheDocument()
+    await screen.findByRole('button', { name: 'Finance Health Record' })
+    expect(screen.queryByRole('button', { name: 'Tech Record' })).not.toBeInTheDocument()
   })
 
   it('returns to the same archive page after opening a dossier', async () => {

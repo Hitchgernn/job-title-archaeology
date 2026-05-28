@@ -26,6 +26,8 @@ export type ArchiveRecord = {
   record_id: string
   title: string
   category: string
+  category_detail: string
+  categories: string[]
   first_seen_label: string
   velocity_label: string
   score: number

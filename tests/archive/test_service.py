@@ -36,7 +36,9 @@ def test_build_record_metadata_uses_curated_title_data() -> None:
     metadata = build_record_metadata(make_trend(), rank=1)
 
     assert metadata.record_id == "JTA-0001-AI-WORKFLOW-ARCHITECT"
-    assert metadata.category == "Tech / Automation"
+    assert metadata.category == "TECH"
+    assert metadata.category_detail == "Tech / Automation"
+    assert metadata.categories == ["TECH"]
     assert metadata.first_seen_label == "May 2026 · Bright Data Corpus"
     assert metadata.velocity_label == "High · 86% growth index"
     assert "workflow" in metadata.excerpt.lower()
@@ -58,6 +60,8 @@ def test_cross_sector_archive_metadata() -> None:
     record = build_record_metadata(make_trend("Clinical AI Safety Officer"), rank=1)
 
     assert record.category == "HEALTHCARE"
+    assert record.category_detail == "HEALTHCARE"
+    assert record.categories == ["HEALTHCARE"]
     assert "clinical" in record.excerpt.lower()
 
 
@@ -65,7 +69,9 @@ def test_unknown_title_gets_deterministic_fallback_metadata() -> None:
     dossier = build_dossier_metadata(make_trend("Quantum Payroll Cartographer"), rank=2)
 
     assert dossier.record_id == "JTA-0002-QUANTUM-PAYROLL-CARTOGRAPHER"
-    assert dossier.category == "Tech / Operations"
+    assert dossier.category == "TECH"
+    assert dossier.category_detail == "Tech / Operations"
+    assert dossier.categories == ["TECH"]
     assert dossier.first_seen_label == "May 2026 · Bright Data Corpus"
     assert dossier.early_adopters[0].company == "Acme AI Lab"
     assert dossier.sector_density[0].percentage == 45
@@ -79,7 +85,7 @@ def test_build_archive_response_summarizes_records() -> None:
 
     assert len(response.records) == 2
     assert response.summary.total_records == 2
-    assert response.summary.category_counts == {"Tech / Automation": 1, "Tech / Operations": 1}
+    assert response.summary.category_counts == {"TECH": 2}
     assert response.summary.era_density[0].label == "Era 2020-26"
     assert response.records[0].record_id == "JTA-0001-AI-WORKFLOW-ARCHITECT"
 
@@ -99,7 +105,8 @@ def test_build_dossier_response_returns_none_for_unknown_id() -> None:
 def test_build_archive_response_uses_cached_metadata() -> None:
     response = build_archive_response([make_trend()], {10: make_metadata()})
 
-    assert response.records[0].category == "Tech / LLM"
+    assert response.records[0].category == "TECH"
+    assert response.records[0].category_detail == "Tech / LLM"
     assert "Generated metadata" in response.records[0].excerpt
 
 
@@ -116,7 +123,9 @@ def test_build_dossier_response_uses_cached_metadata() -> None:
     dossier = build_dossier_response([make_trend()], "JTA-0001-AI-WORKFLOW-ARCHITECT", {10: make_metadata()})
 
     assert dossier is not None
-    assert dossier.category == "Tech / LLM"
+    assert dossier.category == "TECH"
+    assert dossier.category_detail == "Tech / LLM"
+    assert dossier.categories == ["TECH"]
     assert dossier.preceding_titles == ["Solutions Architect", "AI Engineer", "Platform Lead"]
 
 

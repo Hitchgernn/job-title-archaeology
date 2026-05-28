@@ -35,6 +35,8 @@ class ArchiveRecord(BaseModel):
     record_id: str
     title: str
     category: str
+    category_detail: str
+    categories: list[str]
     first_seen_label: str
     velocity_label: str
     score: float

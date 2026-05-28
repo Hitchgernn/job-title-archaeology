@@ -6,8 +6,7 @@ import type { AdoptionPoint, ArchiveRecord, ArchiveResponse, DossierResponse, Er
 
 const EDITION = 'Vol. 1 · Issue 47'
 const PAGE_SIZE = 3
-const VISIBLE_CATEGORY_LIMIT = 4
-const OTHER_CATEGORY = 'OTHER'
+const BROAD_CATEGORIES = ['TECH', 'FINANCE', 'HEALTHCARE', 'MANUFACTURING', 'PUBLIC SECTOR', 'OTHER'] as const
 const TODAY = new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())
 
 type View = { name: 'archive' } | { name: 'dossier'; recordId: string }
@@ -39,12 +38,6 @@ function Masthead({ onArchive }: { onArchive: () => void }) {
         <button type="button" onClick={onArchive}>JOB TITLE ARCHAEOLOGY</button>
         <span>{EDITION}</span>
       </div>
-      <nav className="section-nav" aria-label="Archive sections">
-        {['TECH', 'FINANCE', 'HEALTHCARE', 'MANUFACTURING', 'PUBLIC SECTOR'].map((section) => (
-          <span key={section}>{section}</span>
-        ))}
-        <strong>SEARCH THE ARCHIVE</strong>
-      </nav>
     </header>
   )
 }
@@ -74,7 +67,7 @@ function ArchiveResult({ record, onOpen }: { record: ArchiveRecord; onOpen: (rec
   return (
     <article className="archive-result">
       <div className="result-meta">
-        <span>Cat. {record.category}</span>
+        <span>Cat. {record.category_detail || record.category}</span>
         <span>REC_ID: {record.record_id}</span>
       </div>
       <button type="button" onClick={() => onOpen(record.record_id)}>
@@ -141,14 +134,15 @@ function ArchivePage({ data, onOpen }: { data: ArchiveResponse; onOpen: (recordI
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('ALL')
   const [page, setPage] = useState(() => archivePageFromHash())
-  const allCategories = Object.keys(data.summary.category_counts)
-  const visibleCategories = allCategories.slice(0, VISIBLE_CATEGORY_LIMIT)
-  const overflowCategories = allCategories.slice(VISIBLE_CATEGORY_LIMIT)
-  const categories = ['ALL', ...visibleCategories, ...(overflowCategories.length ? [OTHER_CATEGORY] : [])]
+  const presentCategories = BROAD_CATEGORIES.filter((name) =>
+    data.records.some((record) => (record.categories ?? [record.category]).includes(name)),
+  )
+  const categories = ['ALL', ...presentCategories]
   const filtered = data.records.filter((record) => {
-    const text = `${record.title} ${record.category} ${record.early_mover_companies.join(' ')}`.toLowerCase()
+    const recordCategories = record.categories ?? [record.category]
+    const text = `${record.title} ${record.category_detail ?? ''} ${recordCategories.join(' ')} ${record.early_mover_companies.join(' ')}`.toLowerCase()
     const matchesQuery = text.includes(query.toLowerCase())
-    const matchesCategory = category === 'ALL' || record.category === category || (category === OTHER_CATEGORY && overflowCategories.includes(record.category))
+    const matchesCategory = category === 'ALL' || recordCategories.includes(category)
     return matchesQuery && matchesCategory
   })
   const pageCount = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1)
