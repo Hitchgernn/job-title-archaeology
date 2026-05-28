@@ -46,6 +46,48 @@ def fetch_cached_metadata(connection, normalized_title_ids: list[int], prompt_ve
         return {int(row["normalized_title_id"]): ArchiveEditorialMetadata.model_validate(row["metadata"]) for row in cursor.fetchall()}
 
 
+def update_cached_image(
+    connection,
+    normalized_title_id: int,
+    prompt_version: str,
+    image_path: str,
+    image_prompt: str,
+    image_provider: str,
+    image_model: str,
+) -> None:
+    cached = fetch_cached_metadata(connection, [normalized_title_id], prompt_version)
+    metadata = cached.get(normalized_title_id)
+    if metadata is None:
+        raise ValueError(f"No cached archive metadata for normalized_title_id={normalized_title_id} prompt_version={prompt_version}")
+
+    value_placeholder = placeholder(connection)
+    cursor = connection.cursor()
+    try:
+        cursor.execute(
+            f"""
+            SELECT input_hash
+            FROM archive_metadata_cache
+            WHERE normalized_title_id = {value_placeholder}
+              AND prompt_version = {value_placeholder}
+            """,
+            (normalized_title_id, prompt_version),
+        )
+        row = cursor.fetchone()
+    finally:
+        cursor.close()
+    input_hash = row[0] if row else "image-update"
+
+    updated_metadata = metadata.model_copy(
+        update={
+            "image_path": image_path,
+            "image_prompt": image_prompt,
+            "image_provider": image_provider,
+            "image_model": image_model,
+        }
+    )
+    upsert_cached_metadata(connection, normalized_title_id, prompt_version, image_provider, image_model, input_hash, updated_metadata)
+
+
 def upsert_cached_metadata(
     connection,
     normalized_title_id: int,
