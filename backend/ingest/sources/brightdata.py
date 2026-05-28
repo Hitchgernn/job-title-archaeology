@@ -109,10 +109,17 @@ class BrightDataClient:
         raise BrightDataError("fetch results response must be a list of objects or contain data list")
 
     def _request(self, action: str, method: str, url: str, **kwargs: Any) -> httpx.Response:
-        try:
-            return httpx.request(method, url, **kwargs)
-        except httpx.HTTPError as exc:
-            raise BrightDataError(f"Bright Data {action} request failed for {url}: {exc}") from exc
+        last_exc: Exception | None = None
+        for attempt in range(3):
+            try:
+                return httpx.request(method, url, **kwargs)
+            except httpx.HTTPError as exc:
+                last_exc = exc
+                if attempt < 2:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise BrightDataError(f"Bright Data {action} request failed for {url}: {exc}") from exc
+        raise BrightDataError(f"Bright Data {action} request failed for {url}: {last_exc}")
 
     def _json(self, response: httpx.Response, action: str) -> Any:
         try:

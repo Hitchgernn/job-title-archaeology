@@ -1,16 +1,22 @@
 import os
+from datetime import UTC, datetime
 from pathlib import Path
 
 import typer
 
+from backend.db.connection import open_connection
 from backend.ingest.config import EnvSettings, load_collection_config
+from backend.ingest.models import map_raw_posting
 from backend.ingest.pipeline import (
     build_indeed_inputs,
     build_linkedin_inputs,
     import_json_file,
+    normalize_database,
     run_collection,
     run_keyword_collection,
 )
+from backend.ingest.sinks.jsonl import write_jsonl_archive
+from backend.ingest.sinks.postgres import load_raw_postings
 from backend.ingest.sources.brightdata import BrightDataClient
 
 app = typer.Typer(help="Job Title Archaeology ingestion commands")
@@ -96,6 +102,34 @@ def discover(
     typer.echo(f"Archive: {result.archive_path}")
     if result.postgres_inserted is not None:
         typer.echo(f"Database inserted: {result.postgres_inserted}")
+
+
+@app.command()
+def resume(
+    snapshot_id: str = typer.Option(..., "--snapshot-id"),
+    output_dir: Path = typer.Option(Path("data/raw"), "--output-dir"),
+    poll_delay_seconds: int = typer.Option(15, "--poll-delay-seconds"),
+    max_poll_attempts: int = typer.Option(180, "--max-poll-attempts"),
+) -> None:
+    env = EnvSettings()
+    client = BrightDataClient(env.brightdata_api_token, "https://api.brightdata.com")
+    client.poll_collection(snapshot_id, poll_delay_seconds, max_poll_attempts)
+    raw_records = client.fetch_results(snapshot_id)
+    if not raw_records:
+        raise RuntimeError(f"Bright Data run {snapshot_id} returned 0 records")
+
+    scraped_at = datetime.now(UTC)
+    envelopes = [map_raw_posting(snapshot_id, raw, scraped_at) for raw in raw_records]
+    archive_path = write_jsonl_archive(output_dir, snapshot_id, envelopes)
+    inserted: int | None = None
+    if env.database_url:
+        inserted = load_raw_postings(env.database_url, envelopes)
+        normalize_database(env.database_url, limit=10000)
+
+    typer.echo(f"Collected {len(envelopes)} records from run {snapshot_id}")
+    typer.echo(f"Archive: {archive_path}")
+    if inserted is not None:
+        typer.echo(f"Database inserted: {inserted}")
 
 
 if __name__ == "__main__":
