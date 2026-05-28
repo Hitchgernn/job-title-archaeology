@@ -75,6 +75,7 @@ function ArchiveResult({ record, onOpen }: { record: ArchiveRecord; onOpen: (rec
         <span>Cat. {record.category}</span>
         <span>REC_ID: {record.record_id}</span>
       </div>
+      <img className="record-illustration" src={record.image_path ?? jobMarketImage} alt={`${record.title} archival illustration`} />
       <button type="button" onClick={() => onOpen(record.record_id)}>
         {record.title}
       </button>
@@ -285,6 +286,9 @@ function DossierPage({ dossier, onArchive }: { dossier: DossierResponse; onArchi
           </div>
         </article>
         <aside>
+          <div className="dossier-plate">
+            <img src={dossier.image_path ?? jobMarketImage} alt={`${dossier.title} archival illustration`} />
+          </div>
           <h3>Early Adopters Timeline</h3>
           <ul>
             {dossier.early_adopters.map((adopter) => (

@@ -33,6 +33,7 @@ export type ArchiveRecord = {
   prior_count: number
   early_mover_companies: string[]
   excerpt: string
+  image_path?: string | null
 }
 
 export type EraDensity = {

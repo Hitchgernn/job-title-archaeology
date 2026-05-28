@@ -1,25 +1,51 @@
 import '@testing-library/jest-dom/vitest'
-import { render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
-const successPayload = {
-  trends: [
+const imagePath = '/archive-generated/10-ai-workflow-architect.png'
+
+const archivePayload = {
+  records: [
     {
-      rank: 1,
+      record_id: 'ai-workflow-architect',
       title: 'AI Workflow Architect',
+      category: 'TECH',
+      first_seen_label: '2025 Q4',
+      velocity_label: 'Rapid ascent',
       score: 0.92,
       recent_count: 12,
       prior_count: 1,
-      newness: 1,
-      velocity: 0.86,
-      concentration: 0.6,
       early_mover_companies: ['Acme', 'Globex'],
-      narrative: 'summary:\nAI workflow roles are emerging.\nevidence:\nRecent postings jumped.',
+      excerpt: 'AI workflow roles are emerging.',
+      image_path: imagePath,
     },
   ],
-  summary: { trend_count: 1, average_score: 0.92, early_mover_count: 2 },
+  summary: {
+    total_records: 1,
+    category_counts: { TECH: 1 },
+    era_density: [{ label: '2025', percentage: 72 }],
+  },
 }
+
+const dossierPayload = {
+  ...archivePayload.records[0],
+  subheadline: 'A new operational layer enters the archive.',
+  lead_paragraph: 'Recent postings jumped.',
+  pull_quote: 'Workflow orchestration became a job title.',
+  adoption_points: [{ label: '2025 Q4', value: 12, annotation: 'Breakout' }],
+  sector_density: [{ sector: 'Technology', percentage: 88 }],
+  early_adopters: [{ company: 'Acme', date_label: '2025 Q4', location_label: 'Remote' }],
+  preceding_titles: ['Automation Specialist'],
+  competencies: ['Process mapping'],
+  outlook: 'Continued growth likely.',
+}
+
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+  window.location.hash = ''
+})
 
 describe('App', () => {
   it('renders loading state', () => {
@@ -27,26 +53,41 @@ describe('App', () => {
 
     render(<App />)
 
-    expect(screen.getByText(/acquiring signals/i)).toBeInTheDocument()
+    expect(screen.getByText(/opening archive/i)).toBeInTheDocument()
   })
 
-  it('renders trend cards', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => successPayload }))
+  it('renders archive record image from image_path', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => archivePayload }))
 
     render(<App />)
 
-    await waitFor(() => expect(screen.getByText('AI Workflow Architect')).toBeInTheDocument())
-    expect(screen.getByText('SIGNAL DESK')).toBeInTheDocument()
-    expect(screen.getAllByText('0.92').length).toBeGreaterThan(0)
-    expect(screen.getByText(/Acme, Globex/)).toBeInTheDocument()
+    const image = await screen.findByAltText('AI Workflow Architect archival illustration')
+    expect(image).toHaveAttribute('src', imagePath)
+  })
+
+  it('renders dossier image from image_path', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => archivePayload })
+      .mockResolvedValueOnce({ ok: true, json: async () => dossierPayload })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'AI Workflow Architect' }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/archive/titles/ai-workflow-architect?limit=10'))
+    const image = await screen.findByAltText('AI Workflow Architect archival illustration')
+    expect(image).toHaveAttribute('src', imagePath)
   })
 
   it('renders empty state', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ trends: [], summary: { trend_count: 0, average_score: 0, early_mover_count: 0 } }) }))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ records: [], summary: { total_records: 0, category_counts: {}, era_density: [] } }),
+    }))
 
     render(<App />)
 
-    await waitFor(() => expect(screen.getByText(/no signals found/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/no records found/i)).toBeInTheDocument())
   })
 
   it('renders error state', async () => {
@@ -54,6 +95,6 @@ describe('App', () => {
 
     render(<App />)
 
-    await waitFor(() => expect(screen.getByText(/signal feed interrupted/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/archive feed interrupted/i)).toBeInTheDocument())
   })
 })

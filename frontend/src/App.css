@@ -184,8 +184,10 @@ button {
 
 .archive-result {
   display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
   grid-template-rows: auto auto 1fr auto;
-  height: 212px;
+  column-gap: 20px;
+  height: 232px;
   overflow: hidden;
   border-bottom: 1px solid #c4c7c7;
   margin-bottom: 34px;
@@ -199,9 +201,21 @@ button {
 
 .result-meta {
   display: flex;
+  grid-column: 1 / -1;
   justify-content: space-between;
   gap: 18px;
   color: #444748;
+}
+
+.record-illustration {
+  grid-row: 2 / 5;
+  width: 132px;
+  height: 154px;
+  align-self: start;
+  border: 1px solid #747878;
+  background: #f1edec;
+  filter: grayscale(1) contrast(1.16);
+  object-fit: cover;
 }
 
 .result-meta span:first-child {
@@ -493,6 +507,22 @@ button {
 .dossier-hero aside {
   border-left: 1px solid #1c1b1b;
   padding-left: 28px;
+}
+
+.dossier-plate {
+  border: 1px solid #747878;
+  margin-bottom: 24px;
+  background: #f1edec;
+  padding: 8px;
+}
+
+.dossier-plate img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border: 1px solid #c4c7c7;
+  filter: grayscale(1) contrast(1.14);
+  object-fit: cover;
 }
 
 .dossier-hero ul,
