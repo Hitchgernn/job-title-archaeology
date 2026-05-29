@@ -60,6 +60,32 @@ CREATE TABLE IF NOT EXISTS archive_metadata_cache (
 )
 """
 
+POSTGRES_COMPANY_SIGNALS_SQL = """
+CREATE TABLE IF NOT EXISTS company_signals (
+    id BIGSERIAL PRIMARY KEY,
+    company_key TEXT NOT NULL UNIQUE,
+    ticker TEXT,
+    display_name TEXT NOT NULL,
+    recent_hires_30d INTEGER NOT NULL,
+    prior_hires_30d INTEGER NOT NULL,
+    velocity_score DOUBLE PRECISION NOT NULL,
+    top_titles JSONB NOT NULL,
+    computed_at TIMESTAMPTZ NOT NULL
+)
+"""
+
+POSTGRES_SERP_SIGNALS_SQL = """
+CREATE TABLE IF NOT EXISTS serp_signals (
+    id BIGSERIAL PRIMARY KEY,
+    normalized_title_id BIGINT NOT NULL REFERENCES normalized_titles(id) ON DELETE CASCADE,
+    query_kind TEXT NOT NULL,
+    query TEXT NOT NULL,
+    results JSONB NOT NULL,
+    fetched_at TIMESTAMPTZ NOT NULL,
+    UNIQUE(normalized_title_id, query_kind)
+)
+"""
+
 SQLITE_RAW_JOB_POSTINGS_SQL = """
 CREATE TABLE IF NOT EXISTS raw_job_postings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,6 +148,32 @@ CREATE TABLE IF NOT EXISTS archive_metadata_cache (
 )
 """
 
+SQLITE_COMPANY_SIGNALS_SQL = """
+CREATE TABLE IF NOT EXISTS company_signals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_key TEXT NOT NULL UNIQUE,
+    ticker TEXT,
+    display_name TEXT NOT NULL,
+    recent_hires_30d INTEGER NOT NULL,
+    prior_hires_30d INTEGER NOT NULL,
+    velocity_score REAL NOT NULL,
+    top_titles TEXT NOT NULL,
+    computed_at TEXT NOT NULL
+)
+"""
+
+SQLITE_SERP_SIGNALS_SQL = """
+CREATE TABLE IF NOT EXISTS serp_signals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    normalized_title_id INTEGER NOT NULL REFERENCES normalized_titles(id) ON DELETE CASCADE,
+    query_kind TEXT NOT NULL,
+    query TEXT NOT NULL,
+    results TEXT NOT NULL,
+    fetched_at TEXT NOT NULL,
+    UNIQUE(normalized_title_id, query_kind)
+)
+"""
+
 POSTGRES_ALTER_SQL = [
     "ALTER TABLE raw_job_postings ADD COLUMN IF NOT EXISTS title_key TEXT",
     "ALTER TABLE raw_job_postings ADD COLUMN IF NOT EXISTS company_key TEXT",
@@ -150,9 +202,9 @@ def is_sqlite_connection(connection) -> bool:
 
 def run_migrations(connection) -> None:
     statements = (
-        [SQLITE_RAW_JOB_POSTINGS_SQL, SQLITE_NORMALIZED_TITLES_SQL, SQLITE_JOB_POSTING_TITLES_SQL, SQLITE_ARCHIVE_METADATA_CACHE_SQL]
+        [SQLITE_RAW_JOB_POSTINGS_SQL, SQLITE_NORMALIZED_TITLES_SQL, SQLITE_JOB_POSTING_TITLES_SQL, SQLITE_ARCHIVE_METADATA_CACHE_SQL, SQLITE_COMPANY_SIGNALS_SQL, SQLITE_SERP_SIGNALS_SQL]
         if is_sqlite_connection(connection)
-        else [POSTGRES_RAW_JOB_POSTINGS_SQL, POSTGRES_NORMALIZED_TITLES_SQL, POSTGRES_JOB_POSTING_TITLES_SQL, POSTGRES_ARCHIVE_METADATA_CACHE_SQL]
+        else [POSTGRES_RAW_JOB_POSTINGS_SQL, POSTGRES_NORMALIZED_TITLES_SQL, POSTGRES_JOB_POSTING_TITLES_SQL, POSTGRES_ARCHIVE_METADATA_CACHE_SQL, POSTGRES_COMPANY_SIGNALS_SQL, POSTGRES_SERP_SIGNALS_SQL]
     )
     cursor = connection.cursor()
     try:

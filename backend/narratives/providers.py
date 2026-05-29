@@ -62,6 +62,9 @@ class OllamaNarrativeProvider:
         if not isinstance(text, str):
             raise NarrativeProviderError(f"Ollama response missing content: {data}")
         return text.strip()
+
+
+class OpenRouterNarrativeProvider:
     BASE_URL = "https://openrouter.ai/api/v1"
 
     def __init__(self, api_key: str | None = None, model: str | None = None, base_url: str | None = None) -> None:
