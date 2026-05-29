@@ -9,6 +9,8 @@ frontend/node_modules/
 frontend/dist/
 job_title_archaeology.db
 job_title_archaeology.db-*
+!data/seed/
+!data/seed/**
 debug_dashboard.py
 .superpowers/
 configs/*

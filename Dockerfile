@@ -16,9 +16,12 @@ COPY pyproject.toml ./
 RUN pip install --upgrade pip && pip install .
 COPY backend ./backend
 COPY init_db.py ./
+COPY entrypoint.sh ./
+COPY data/seed ./data/seed
 COPY --from=frontend /app/frontend/dist ./frontend/dist
+RUN chmod +x /app/entrypoint.sh && mkdir -p /app/runtime
 
-ENV DATABASE_URL=sqlite:////data/job_title_archaeology.db \
+ENV DATABASE_URL=sqlite:////app/runtime/job_title_archaeology.db \
     PORT=8080
 EXPOSE 8080
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["/app/entrypoint.sh"]

@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: job-title-archaeology
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:////app/runtime/job_title_archaeology.db
+      - key: PORT
+        value: 8080
+      - key: BRIGHTDATA_API_TOKEN
+        sync: false
+      - key: BRIGHTDATA_WEB_SCRAPER_ID_INDEED
+        sync: false
+      - key: BRIGHTDATA_WEB_SCRAPER_ID_LINKEDIN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
