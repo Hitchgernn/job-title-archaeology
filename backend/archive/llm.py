@@ -32,5 +32,5 @@ def parse_archive_metadata(text: str) -> ArchiveEditorialMetadata:
 def generate_archive_metadata(trend: TrendResult, provider: NarrativeProvider) -> ArchiveEditorialMetadata:
     try:
         return parse_archive_metadata(provider.generate(build_archive_metadata_prompt(trend)))
-    except (json.JSONDecodeError, ValidationError, RuntimeError):
+    except (json.JSONDecodeError, ValidationError):
         return _metadata_for(trend.display_title)

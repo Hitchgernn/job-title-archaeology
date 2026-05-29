@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 import typer
@@ -35,6 +36,7 @@ def generate(
     limit: int = typer.Option(10, "--limit", min=1, max=200),
     force: bool = typer.Option(False, "--force"),
     provider_name: str = typer.Option("gemini", "--provider", help="gemini | openrouter"),
+    request_delay: float = typer.Option(3.0, "--request-delay", help="seconds between requests"),
 ) -> None:
     connection = open_connection()
     generated = 0
@@ -63,8 +65,11 @@ def generate(
                 metadata_input_hash(trend),
                 metadata,
             )
+            connection.commit()
             generated += 1
-        connection.commit()
+            typer.echo(f"  [{generated}] {trend.display_title}")
+            if request_delay > 0:
+                time.sleep(request_delay)
     finally:
         connection.close()
 

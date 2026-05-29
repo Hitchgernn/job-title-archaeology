@@ -17,7 +17,7 @@ def run_trend_scoring(connection, limit: int, now: datetime | None = None, sourc
         groups[row.normalized_title_id].append(row)
 
     results = [score_title_group(group_rows, now=scoring_time) for group_rows in groups.values()]
-    results.sort(key=lambda result: (-result.trend_score, -result.recent_count, result.display_title))
+    results.sort(key=lambda result: (-result.total_count, -result.trend_score, -result.recent_count, result.display_title))
     return results[:limit]
 
 

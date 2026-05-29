@@ -65,6 +65,7 @@ def score_title_group(rows: Iterable[TrendPostingRow], now: datetime) -> TrendRe
         token_key=first_row.token_key,
         recent_count=recent_count,
         prior_count=prior_count,
+        total_count=len(ordered_rows),
         scores=scores,
         trend_score=trend_score,
         early_mover_companies=early_movers,

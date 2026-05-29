@@ -32,6 +32,7 @@ class TrendResult(BaseModel):
     token_key: str
     recent_count: int
     prior_count: int
+    total_count: int = 0
     scores: TrendScores
     trend_score: float
     early_mover_companies: list[str] = Field(default_factory=list)
