@@ -1,7 +1,7 @@
 from collections import Counter
 
 from backend.archive.enrichment import build_dossier_metadata, build_record_metadata
-from backend.archive.models import ArchiveEditorialMetadata, ArchiveResponse, ArchiveSummary, DossierResponse, EraDensity
+from backend.archive.models import ArchiveEditorialMetadata, ArchiveResponse, ArchiveSummary, DossierResponse, EraDensity, SerpSignal
 from backend.trends.models import TrendResult, WeeklyCount
 
 
@@ -31,15 +31,18 @@ def build_dossier_response(
     record_id: str,
     metadata_by_title_id: dict[int, ArchiveEditorialMetadata] | None = None,
     weekly_counts_by_title_id: dict[int, list[WeeklyCount]] | None = None,
+    serp_signals_by_title_id: dict[int, list[SerpSignal]] | None = None,
 ) -> DossierResponse | None:
     metadata_by_title_id = metadata_by_title_id or {}
     weekly_counts_by_title_id = weekly_counts_by_title_id or {}
+    serp_signals_by_title_id = serp_signals_by_title_id or {}
     for index, trend in enumerate(trends, start=1):
         dossier = build_dossier_metadata(
             trend,
             rank=index,
             metadata=metadata_by_title_id.get(trend.normalized_title_id),
             weekly_counts=weekly_counts_by_title_id.get(trend.normalized_title_id),
+            serp_signals=serp_signals_by_title_id.get(trend.normalized_title_id),
         )
         if dossier.record_id == record_id:
             return dossier

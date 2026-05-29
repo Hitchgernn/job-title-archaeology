@@ -1,3 +1,4 @@
+import os
 import time
 from pathlib import Path
 
@@ -21,6 +22,8 @@ from backend.archive.router import ARCHIVE_SOURCE
 from backend.db.connection import open_connection
 from backend.db.migrate import run_migrations
 from backend.narratives.providers import GeminiNarrativeProvider, OllamaNarrativeProvider, OpenRouterNarrativeProvider
+from backend.serp.client import BrightDataSerpClient
+from backend.serp.enrichment import enrich_title_with_press
 from backend.trends.pipeline import run_trend_scoring
 
 app = typer.Typer(help="Job Title Archaeology archive commands")
@@ -129,6 +132,45 @@ def generate_images(
         connection.close()
 
     typer.echo(f"generated {generated} images; skipped {skipped}")
+
+
+@app.command("enrich-serp")
+def enrich_serp(
+    limit: int = typer.Option(20, "--limit", min=1, max=200),
+    request_delay: float = typer.Option(2.0, "--request-delay"),
+    zone: str = typer.Option("serp_api1", "--zone"),
+) -> None:
+    api_token = os.getenv("BRIGHTDATA_API_TOKEN")
+    if not api_token:
+        raise typer.BadParameter("BRIGHTDATA_API_TOKEN missing in environment")
+
+    connection = open_connection()
+    enriched = 0
+    failures = 0
+    try:
+        run_migrations(connection)
+        client = BrightDataSerpClient(api_token=api_token, zone=zone)
+        trends = run_trend_scoring(connection, limit=limit, source=ARCHIVE_SOURCE)
+        for trend in trends:
+            try:
+                hits = enrich_title_with_press(
+                    connection,
+                    client=client,
+                    normalized_title_id=trend.normalized_title_id,
+                    title=trend.display_title,
+                )
+                connection.commit()
+                enriched += 1
+                typer.echo(f"  [{enriched}] {trend.display_title} → {hits} hits")
+            except Exception as exc:
+                failures += 1
+                typer.echo(f"  ! {trend.display_title}: {exc}")
+            if request_delay > 0:
+                time.sleep(request_delay)
+    finally:
+        connection.close()
+
+    typer.echo(f"enriched {enriched} titles; failed {failures}")
 
 
 if __name__ == "__main__":

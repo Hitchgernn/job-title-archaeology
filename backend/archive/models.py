@@ -101,6 +101,13 @@ class EarlyAdopter(BaseModel):
     location_label: str
 
 
+class SerpSignal(BaseModel):
+    title: str
+    url: str
+    snippet: str
+    source: str
+
+
 class DossierResponse(ArchiveRecord):
     subheadline: str
     lead_paragraph: str
@@ -111,3 +118,4 @@ class DossierResponse(ArchiveRecord):
     preceding_titles: list[str]
     competencies: list[str]
     outlook: str
+    serp_signals: list[SerpSignal] = Field(default_factory=list)

@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 
-from backend.archive.models import AdoptionPoint, ArchiveEditorialMetadata, ArchiveRecord, DossierResponse, EarlyAdopter, SectorDensity
+from backend.archive.models import AdoptionPoint, ArchiveEditorialMetadata, ArchiveRecord, DossierResponse, EarlyAdopter, SectorDensity, SerpSignal
 from backend.trends.models import TrendResult, WeeklyCount
 
 
@@ -271,6 +271,7 @@ def build_dossier_metadata(
     rank: int,
     metadata: ArchiveEditorialMetadata | None = None,
     weekly_counts: list[WeeklyCount] | None = None,
+    serp_signals: list[SerpSignal] | None = None,
 ) -> DossierResponse:
     metadata = metadata or _metadata_for(trend.display_title)
     record = build_record_metadata(trend, rank, metadata)
@@ -285,4 +286,5 @@ def build_dossier_metadata(
         preceding_titles=metadata.preceding_titles,
         competencies=metadata.competencies,
         outlook=metadata.outlook,
+        serp_signals=serp_signals or [],
     )
