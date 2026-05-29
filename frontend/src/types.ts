@@ -81,4 +81,52 @@ export type DossierResponse = ArchiveRecord & {
   preceding_titles: string[]
   competencies: string[]
   outlook: string
+  serp_signals: SerpSignal[]
+}
+
+export type SerpSignal = {
+  title: string
+  url: string
+  snippet: string
+  source: string
+}
+
+export type CompanyTitleVelocity = {
+  normalized_title_id: number
+  display_title: string
+  count: number
+  weekly_buckets: { week_start: string; count: number }[]
+}
+
+export type WeeklyHire = {
+  week_start: string
+  count: number
+}
+
+export type CompanySignal = {
+  company_key: string
+  ticker: string | null
+  display_name: string
+  recent_hires_30d: number
+  prior_hires_30d: number
+  velocity_score: number
+  top_titles: CompanyTitleVelocity[]
+  computed_at: string
+}
+
+export type CompanyListSummary = {
+  tracked_count: number
+  total_recent_hires: number
+  last_computed_at: string | null
+}
+
+export type CompanyListResponse = {
+  companies: CompanySignal[]
+  summary: CompanyListSummary
+}
+
+export type CompanyDossierResponse = {
+  company: CompanySignal
+  weekly: WeeklyHire[]
+  titles: CompanyTitleVelocity[]
 }

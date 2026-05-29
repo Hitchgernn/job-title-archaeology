@@ -78,7 +78,7 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(await screen.findByRole('button', { name: 'AI Workflow Architect' }))
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/archive/titles/ai-workflow-architect?limit=10'))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/archive/titles/ai-workflow-architect?limit=50'))
     const image = await screen.findByAltText('AI Workflow Architect archival illustration')
     expect(image).toHaveAttribute('src', imagePath)
   })

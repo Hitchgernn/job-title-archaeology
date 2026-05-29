@@ -1,19 +1,40 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
-import { fetchArchiveDossier, fetchArchiveTitles } from './api'
+import { fetchArchiveDossier, fetchArchiveTitles, fetchCompanies, fetchCompanyDossier } from './api'
 import jobMarketImage from './assets/archive-images/job-market-1.png'
-import type { AdoptionPoint, ArchiveRecord, ArchiveResponse, DossierResponse, EraDensity, SectorDensity } from './types'
+import type {
+  AdoptionPoint,
+  ArchiveRecord,
+  ArchiveResponse,
+  CompanyDossierResponse,
+  CompanyListResponse,
+  CompanySignal,
+  DossierResponse,
+  EraDensity,
+  SectorDensity,
+  SerpSignal,
+  WeeklyHire,
+} from './types'
 
 const EDITION = 'Vol. 1 · Issue 47'
 const PAGE_SIZE = 3
 const BROAD_CATEGORIES = ['TECH', 'FINANCE', 'HEALTHCARE', 'MANUFACTURING', 'PUBLIC SECTOR', 'OTHER'] as const
 const TODAY = new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())
 
-type View = { name: 'archive' } | { name: 'dossier'; recordId: string }
+type View =
+  | { name: 'archive' }
+  | { name: 'dossier'; recordId: string }
+  | { name: 'companies' }
+  | { name: 'company'; key: string }
 
 function viewFromHash(): View {
-  const match = window.location.hash.match(/^#\/titles\/(.+)$/)
-  return match ? { name: 'dossier', recordId: decodeURIComponent(match[1]) } : { name: 'archive' }
+  const hash = window.location.hash
+  const dossierMatch = hash.match(/^#\/titles\/(.+)$/)
+  if (dossierMatch) return { name: 'dossier', recordId: decodeURIComponent(dossierMatch[1]) }
+  const companyMatch = hash.match(/^#\/companies\/(.+)$/)
+  if (companyMatch) return { name: 'company', key: decodeURIComponent(companyMatch[1]) }
+  if (hash === '#/companies' || hash.startsWith('#/companies?')) return { name: 'companies' }
+  return { name: 'archive' }
 }
 
 function archivePageFromHash() {
@@ -26,11 +47,22 @@ function pushArchivePage(page: number) {
 }
 
 function pushView(view: View) {
-  const hash = view.name === 'dossier' ? `#/titles/${encodeURIComponent(view.recordId)}` : '#/'
-  window.location.hash = hash
+  if (view.name === 'dossier') {
+    window.location.hash = `#/titles/${encodeURIComponent(view.recordId)}`
+    return
+  }
+  if (view.name === 'company') {
+    window.location.hash = `#/companies/${encodeURIComponent(view.key)}`
+    return
+  }
+  if (view.name === 'companies') {
+    window.location.hash = '#/companies'
+    return
+  }
+  window.location.hash = '#/'
 }
 
-function Masthead({ onArchive }: { onArchive: () => void }) {
+function Masthead({ active, onArchive, onCompanies }: { active: 'archive' | 'companies'; onArchive: () => void; onCompanies: () => void }) {
   return (
     <header className="masthead">
       <div className="masthead-top">
@@ -38,6 +70,10 @@ function Masthead({ onArchive }: { onArchive: () => void }) {
         <button type="button" onClick={onArchive}>JOB TITLE ARCHAEOLOGY</button>
         <span>{EDITION}</span>
       </div>
+      <nav className="masthead-nav" aria-label="Primary sections">
+        <button type="button" className={active === 'archive' ? 'active' : ''} onClick={onArchive}>The Archive</button>
+        <button type="button" className={active === 'companies' ? 'active' : ''} onClick={onCompanies}>Field Reports</button>
+      </nav>
     </header>
   )
 }
@@ -305,6 +341,8 @@ function DossierPage({ dossier, onArchive }: { dossier: DossierResponse; onArchi
         <SectorDensity sectors={dossier.sector_density} />
       </section>
 
+      {dossier.serp_signals && dossier.serp_signals.length > 0 ? <SerpPanel signals={dossier.serp_signals} /> : null}
+
       <section className="detail-grid">
         <article>
           <h3>Preceding Titles</h3>
@@ -326,9 +364,154 @@ function DossierPage({ dossier, onArchive }: { dossier: DossierResponse; onArchi
   )
 }
 
+function SerpPanel({ signals }: { signals: SerpSignal[] }) {
+  return (
+    <section className="serp-panel" aria-label="Press wire">
+      <h3>Press Wire</h3>
+      <p className="serp-byline">Open-web signals via Bright Data SERP API</p>
+      <ul>
+        {signals.map((signal) => (
+          <li key={signal.url}>
+            <a href={signal.url} target="_blank" rel="noreferrer noopener">{signal.title || signal.url}</a>
+            <em>{signal.source}</em>
+            <p>{signal.snippet}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function VelocitySparkline({ buckets }: { buckets: WeeklyHire[] }) {
+  if (buckets.length === 0) return <span className="sparkline-empty">No weekly history</span>
+  const maxValue = Math.max(...buckets.map((b) => b.count), 1)
+  const points = buckets.map((bucket, index) => {
+    const x = buckets.length === 1 ? 100 : (index / (buckets.length - 1)) * 100
+    const y = 100 - (bucket.count / maxValue) * 80
+    return { x, y, label: bucket.week_start, value: bucket.count }
+  })
+  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+  return (
+    <svg className="velocity-sparkline" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Weekly hires sparkline">
+      <path d={path} />
+      {points.map((p) => (
+        <circle key={p.label} cx={p.x} cy={p.y} r="1.6" />
+      ))}
+    </svg>
+  )
+}
+
+function CompanyTile({ signal, onOpen }: { signal: CompanySignal; onOpen: (key: string) => void }) {
+  const buckets = signal.top_titles[0]?.weekly_buckets?.map((b) => ({ week_start: b.week_start, count: b.count })) ?? []
+  return (
+    <article className="company-tile" onClick={() => onOpen(signal.ticker ?? signal.company_key)}>
+      <header>
+        <span className="ticker">{signal.ticker ?? '—'}</span>
+        <h3>{signal.display_name}</h3>
+      </header>
+      <div className="company-stats">
+        <div>
+          <span>Recent 30d</span>
+          <strong>{signal.recent_hires_30d}</strong>
+        </div>
+        <div>
+          <span>Prior 30d</span>
+          <strong>{signal.prior_hires_30d}</strong>
+        </div>
+        <div>
+          <span>Velocity</span>
+          <strong>{signal.velocity_score.toFixed(2)}×</strong>
+        </div>
+      </div>
+      <VelocitySparkline buckets={buckets} />
+      <ul className="company-titles">
+        {signal.top_titles.slice(0, 3).map((title) => (
+          <li key={title.normalized_title_id}>
+            <span>{title.display_title}</span>
+            <strong>{title.count}</strong>
+          </li>
+        ))}
+      </ul>
+    </article>
+  )
+}
+
+function CompanyWatchPage({ data, onOpen }: { data: CompanyListResponse; onOpen: (key: string) => void }) {
+  return (
+    <>
+      <section className="search-hero">
+        <span>Field Reports</span>
+        <h2>Pre-earnings hiring signals</h2>
+        <p className="subheadline">
+          Tracking {data.summary.tracked_count} companies · {data.summary.total_recent_hires} fresh hires in last 30 days
+        </p>
+      </section>
+
+      <section className="company-grid" aria-label="Company watch list">
+        {data.companies.length === 0 ? (
+          <StatePanel>No company signals computed yet. Run `python -m backend.companies.cli recompute`.</StatePanel>
+        ) : (
+          data.companies.map((signal) => (
+            <CompanyTile key={signal.company_key} signal={signal} onOpen={onOpen} />
+          ))
+        )}
+      </section>
+    </>
+  )
+}
+
+function CompanyDossierPage({ data, onCompanies }: { data: CompanyDossierResponse; onCompanies: () => void }) {
+  const weeklyPoints: AdoptionPoint[] = data.weekly.map((bucket, index) => ({
+    label: bucket.week_start,
+    value: bucket.count,
+    annotation: index === data.weekly.length - 1 ? 'Latest week' : null,
+  }))
+  return (
+    <>
+      <button className="back-link" type="button" onClick={onCompanies}>← Back to field reports</button>
+      <section className="company-hero">
+        <article>
+          <span>Field Report</span>
+          <h2>{data.company.display_name}</h2>
+          <p className="subheadline">
+            {data.company.ticker ? `${data.company.ticker} · ` : ''}
+            {data.company.recent_hires_30d} hires in last 30 days · velocity {data.company.velocity_score.toFixed(2)}×
+          </p>
+        </article>
+      </section>
+
+      <section className="dossier-data">
+        <section className="chart-panel">
+          <h3>Fig 1.0: Weekly Hiring Curve</h3>
+          {weeklyPoints.length > 0 ? (
+            <AdoptionChart points={weeklyPoints} />
+          ) : (
+            <p className="state-panel">No weekly history available for this company.</p>
+          )}
+        </section>
+        <section className="sector-panel">
+          <h3>Fig 1.1: Top Roles</h3>
+          {data.titles.map((title) => (
+            <div className="sector-row" key={title.normalized_title_id}>
+              <div>
+                <span>{title.display_title}</span>
+                <strong>{title.count}</strong>
+              </div>
+              <i><b style={{ width: `${Math.min(100, (title.count / Math.max(data.titles[0]?.count ?? 1, 1)) * 100)}%` }} /></i>
+            </div>
+          ))}
+          <div className="verified-stamp">Bright Data Hiring Corpus</div>
+        </section>
+      </section>
+    </>
+  )
+}
+
 export default function App() {
   const [archive, setArchive] = useState<ArchiveResponse | null>(null)
   const [dossier, setDossier] = useState<DossierResponse | null>(null)
+  const [companies, setCompanies] = useState<CompanyListResponse | null>(null)
+  const [companyDossier, setCompanyDossier] = useState<CompanyDossierResponse | null>(null)
   const [view, setView] = useState<View>(() => viewFromHash())
   const [error, setError] = useState<string | null>(null)
   const [archiveReturnHash, setArchiveReturnHash] = useState('#/')
@@ -353,22 +536,53 @@ export default function App() {
       .catch((err: Error) => setError(err.message))
   }, [view])
 
+  useEffect(() => {
+    if (view.name !== 'companies' && view.name !== 'company') return
+    if (companies) return
+    fetchCompanies(20)
+      .then(setCompanies)
+      .catch((err: Error) => setError(err.message))
+  }, [view, companies])
+
+  useEffect(() => {
+    if (view.name !== 'company') return
+    setCompanyDossier(null)
+    fetchCompanyDossier(view.key)
+      .then(setCompanyDossier)
+      .catch((err: Error) => setError(err.message))
+  }, [view])
+
   const currentView = useMemo(() => {
     if (error) return <StatePanel>Archive feed interrupted · {error}</StatePanel>
-    if (!archive) return <StatePanel>Opening archive...</StatePanel>
     if (view.name === 'dossier') {
+      if (!archive) return <StatePanel>Opening archive...</StatePanel>
       if (!dossier) return <StatePanel>Retrieving dossier...</StatePanel>
       return <DossierPage dossier={dossier} onArchive={() => { window.location.hash = archiveReturnHash }} />
     }
+    if (view.name === 'companies') {
+      if (!companies) return <StatePanel>Loading field reports...</StatePanel>
+      return <CompanyWatchPage data={companies} onOpen={(key) => pushView({ name: 'company', key })} />
+    }
+    if (view.name === 'company') {
+      if (!companyDossier) return <StatePanel>Loading company report...</StatePanel>
+      return <CompanyDossierPage data={companyDossier} onCompanies={() => pushView({ name: 'companies' })} />
+    }
+    if (!archive) return <StatePanel>Opening archive...</StatePanel>
     return <ArchivePage data={archive} onOpen={(recordId) => {
       setArchiveReturnHash(window.location.hash || '#/')
       pushView({ name: 'dossier', recordId })
     }} />
-  }, [archive, archiveReturnHash, dossier, error, view])
+  }, [archive, archiveReturnHash, dossier, companies, companyDossier, error, view])
+
+  const activeSection: 'archive' | 'companies' = view.name === 'companies' || view.name === 'company' ? 'companies' : 'archive'
 
   return (
     <main className="archive-shell">
-      <Masthead onArchive={() => pushView({ name: 'archive' })} />
+      <Masthead
+        active={activeSection}
+        onArchive={() => pushView({ name: 'archive' })}
+        onCompanies={() => pushView({ name: 'companies' })}
+      />
       {currentView}
       <Footer />
     </main>
