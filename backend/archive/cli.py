@@ -20,7 +20,7 @@ from backend.archive.repository import (
 from backend.archive.router import ARCHIVE_SOURCE
 from backend.db.connection import open_connection
 from backend.db.migrate import run_migrations
-from backend.narratives.providers import GeminiNarrativeProvider, OpenRouterNarrativeProvider
+from backend.narratives.providers import GeminiNarrativeProvider, OllamaNarrativeProvider, OpenRouterNarrativeProvider
 from backend.trends.pipeline import run_trend_scoring
 
 app = typer.Typer(help="Job Title Archaeology archive commands")
@@ -35,7 +35,7 @@ def main() -> None:
 def generate(
     limit: int = typer.Option(10, "--limit", min=1, max=200),
     force: bool = typer.Option(False, "--force"),
-    provider_name: str = typer.Option("gemini", "--provider", help="gemini | openrouter"),
+    provider_name: str = typer.Option("gemini", "--provider", help="gemini | openrouter | ollama"),
     request_delay: float = typer.Option(3.0, "--request-delay", help="seconds between requests"),
 ) -> None:
     connection = open_connection()
@@ -47,6 +47,8 @@ def generate(
             provider = GeminiNarrativeProvider()
         elif provider_name == "openrouter":
             provider = OpenRouterNarrativeProvider()
+        elif provider_name == "ollama":
+            provider = OllamaNarrativeProvider()
         else:
             raise typer.BadParameter(f"unsupported provider '{provider_name}'")
         trends = run_trend_scoring(connection, limit=limit, source=ARCHIVE_SOURCE)

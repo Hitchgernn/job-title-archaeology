@@ -34,7 +34,34 @@ class GeminiNarrativeProvider:
         return (response.text or "").strip()
 
 
-class OpenRouterNarrativeProvider:
+class OllamaNarrativeProvider:
+    BASE_URL = "http://localhost:11434"
+
+    def __init__(self, model: str | None = None, base_url: str | None = None) -> None:
+        self.model = model or os.getenv("OLLAMA_MODEL", "qwen3.5:4b")
+        self.base_url = (base_url or os.getenv("OLLAMA_BASE_URL") or self.BASE_URL).rstrip("/")
+
+    def generate(self, prompt: str) -> str:
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "format": "json",
+            "stream": False,
+        }
+        try:
+            response = httpx.post(f"{self.base_url}/api/chat", json=payload, timeout=300)
+            response.raise_for_status()
+            data = response.json()
+        except httpx.HTTPError as exc:
+            raise NarrativeProviderError(f"Ollama request failed: {exc}") from exc
+        except ValueError as exc:
+            raise NarrativeProviderError(f"Ollama response was not valid JSON: {exc}") from exc
+
+        message = (data.get("message") or {})
+        text = message.get("content")
+        if not isinstance(text, str):
+            raise NarrativeProviderError(f"Ollama response missing content: {data}")
+        return text.strip()
     BASE_URL = "https://openrouter.ai/api/v1"
 
     def __init__(self, api_key: str | None = None, model: str | None = None, base_url: str | None = None) -> None:
