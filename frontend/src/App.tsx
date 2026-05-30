@@ -192,7 +192,6 @@ function LandingPage({ onArchive, onCompanies }: { onArchive: () => void; onComp
           <img src={landingImage} alt="Dashboard preview showing early signal job title detection" />
           <div>
             <span>Source: archive DB</span>
-            <span>Bright Data pipeline</span>
           </div>
         </aside>
       </section>

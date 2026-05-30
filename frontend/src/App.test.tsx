@@ -59,7 +59,7 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /enter the archive/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /read field reports/i })).toBeInTheDocument()
     expect(screen.getAllByText(/ai workflow architect/i).length).toBeGreaterThan(0)
-    expect(screen.getByText(/bright data pipeline/i)).toBeInTheDocument()
+    expect(screen.queryByText(/bright data pipeline/i)).not.toBeInTheDocument()
   })
 
   it('opens archive from landing CTA', async () => {
