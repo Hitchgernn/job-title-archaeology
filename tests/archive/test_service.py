@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from backend.archive.enrichment import build_dossier_metadata, build_record_metadata, stable_record_id
 from backend.archive.models import ArchiveEditorialMetadata
 from backend.trends.models import TrendResult, TrendScores
@@ -129,6 +131,14 @@ def test_build_archive_response_uses_generic_image_after_named_set() -> None:
     response = build_archive_response([make_trend("Unmapped Role", normalized_title_id=9000)])
 
     assert response.records[0].image_path == "/archive-generated/JTA-GENERIC-ARCHIVE.svg"
+
+
+def test_title_named_archive_svg_contains_its_own_title() -> None:
+    path = Path("frontend/public/archive-generated/JTA-1245-RELIABILITY-ENGINEER.svg")
+    content = path.read_text(encoding="utf-8")
+
+    assert "Reliability Engineer" in content
+    assert "AI Architect" not in content
 
 
 def test_build_dossier_response_uses_cached_metadata() -> None:
