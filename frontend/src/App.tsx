@@ -99,6 +99,61 @@ function StatePanel({ children }: { children: React.ReactNode }) {
   return <section className="state-panel">{children}</section>
 }
 
+const CSV_COLUMNS = [
+  'record_id',
+  'title',
+  'category',
+  'category_detail',
+  'categories',
+  'first_seen_label',
+  'velocity_label',
+  'score',
+  'recent_count',
+  'prior_count',
+  'early_mover_companies',
+  'excerpt',
+  'image_path',
+] as const
+
+function csvEscape(value: string | number | null | undefined) {
+  const text = String(value ?? '')
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+function archiveRecordToCsvRow(record: ArchiveRecord) {
+  return [
+    record.record_id,
+    record.title,
+    record.category,
+    record.category_detail,
+    record.categories.join('; '),
+    record.first_seen_label,
+    record.velocity_label,
+    record.score,
+    record.recent_count,
+    record.prior_count,
+    record.early_mover_companies.join('; '),
+    record.excerpt,
+    record.image_path ?? '',
+  ].map(csvEscape).join(',')
+}
+
+function archiveRecordsToCsv(records: ArchiveRecord[]) {
+  return [CSV_COLUMNS.join(','), ...records.map(archiveRecordToCsvRow)].join('\n')
+}
+
+function downloadArchiveCsv(records: ArchiveRecord[]) {
+  const blob = new Blob([archiveRecordsToCsv(records)], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'archive-search-data.csv'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 function ArchiveResult({ record, onOpen }: { record: ArchiveRecord; onOpen: (recordId: string) => void }) {
   return (
     <article className="archive-result">
@@ -124,7 +179,7 @@ function ArchiveResult({ record, onOpen }: { record: ArchiveRecord; onOpen: (rec
   )
 }
 
-function ArchiveSidebar({ densities }: { densities: EraDensity[] }) {
+function ArchiveSidebar({ densities, exportRecords }: { densities: EraDensity[]; exportRecords: ArchiveRecord[] }) {
   return (
     <aside className="archive-sidebar">
       <h3>Archival Context</h3>
@@ -161,7 +216,15 @@ function ArchiveSidebar({ densities }: { densities: EraDensity[] }) {
           ))}
         </ul>
       </section>
-      <button className="export-button" type="button">Export Search Data (.CSV)</button>
+      <button
+        className="export-button"
+        type="button"
+        onClick={() => downloadArchiveCsv(exportRecords)}
+        disabled={exportRecords.length === 0}
+        title={exportRecords.length === 0 ? 'No records to export' : undefined}
+      >
+        Export Search Data (.CSV)
+      </button>
     </aside>
   )
 }
@@ -248,7 +311,7 @@ function ArchivePage({ data, onOpen }: { data: ArchiveResponse; onOpen: (recordI
             </>
           )}
         </div>
-        <ArchiveSidebar densities={data.summary.era_density} />
+        <ArchiveSidebar densities={data.summary.era_density} exportRecords={filtered} />
       </section>
     </>
   )

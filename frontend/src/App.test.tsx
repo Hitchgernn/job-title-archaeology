@@ -114,6 +114,75 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: 'Tech Record' })).not.toBeInTheDocument()
   })
 
+  it('exports current filtered archive records as CSV', async () => {
+    const records = [
+      archiveRecord,
+      {
+        ...archiveRecord,
+        record_id: 'finance-health-record',
+        title: 'Finance Health Record',
+        category: 'FINANCE',
+        category_detail: 'Healthcare / Finance',
+        categories: ['FINANCE', 'HEALTHCARE'],
+        early_mover_companies: ['BankCo'],
+        excerpt: 'Finance, health role with "quoted" signal.',
+        image_path: null,
+      },
+    ]
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...archivePayload,
+        records,
+        summary: {
+          ...archivePayload.summary,
+          category_counts: { TECH: 1, FINANCE: 1, HEALTHCARE: 1 },
+        },
+      }),
+    }))
+    const createObjectURL = vi.fn(() => 'blob:archive-csv')
+    const revokeObjectURL = vi.fn()
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL })
+    const blobParts: BlobPart[][] = []
+    const OriginalBlob = Blob
+    vi.stubGlobal('Blob', class MockBlob extends OriginalBlob {
+      constructor(parts?: BlobPart[], options?: BlobPropertyBag) {
+        blobParts.push(parts ?? [])
+        super(parts, options)
+      }
+    })
+    const clickSpy = vi.fn()
+    const originalCreateElement = document.createElement.bind(document)
+    vi.spyOn(document, 'createElement').mockImplementation((tagName, options) => {
+      const element = originalCreateElement(tagName, options)
+      if (tagName === 'a') Object.defineProperty(element, 'click', { value: clickSpy })
+      return element
+    })
+
+    render(<App />)
+    await screen.findByRole('button', { name: 'AI Workflow Architect' })
+    fireEvent.change(screen.getByPlaceholderText('Search the Archive'), { target: { value: 'workflow' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Export Search Data (.CSV)' }))
+
+    expect(blobParts[0][0]).toBe([
+      'record_id,title,category,category_detail,categories,first_seen_label,velocity_label,score,recent_count,prior_count,early_mover_companies,excerpt,image_path',
+      'ai-workflow-architect,AI Workflow Architect,TECH,Tech / AI,TECH,2025 Q4,Rapid ascent,0.92,12,1,Acme; Globex,AI workflow roles are emerging.,/archive-generated/10-ai-workflow-architect.png',
+    ].join('\n'))
+    expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob))
+    expect(clickSpy).toHaveBeenCalledTimes(1)
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:archive-csv')
+  })
+
+  it('disables CSV export when filters match no records', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => archivePayload }))
+
+    render(<App />)
+    await screen.findByRole('button', { name: 'AI Workflow Architect' })
+    fireEvent.change(screen.getByPlaceholderText('Search the Archive'), { target: { value: 'no matching title' } })
+
+    expect(screen.getByRole('button', { name: 'Export Search Data (.CSV)' })).toBeDisabled()
+  })
+
   it('returns to the same archive page after opening a dossier', async () => {
     const records = Array.from({ length: 4 }, (_, index) => ({
       ...archiveRecord,
