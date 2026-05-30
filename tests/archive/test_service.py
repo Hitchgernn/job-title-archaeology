@@ -1,8 +1,9 @@
+from datetime import datetime, timezone
 from pathlib import Path
 
 from backend.archive.enrichment import build_dossier_metadata, build_record_metadata, stable_record_id
 from backend.archive.models import ArchiveEditorialMetadata
-from backend.trends.models import TrendResult, TrendScores
+from backend.trends.models import EarlyMoverSignal, TrendResult, TrendScores
 
 
 def make_metadata() -> ArchiveEditorialMetadata:
@@ -56,6 +57,25 @@ def test_build_dossier_metadata_uses_curated_title_data() -> None:
     assert dossier.early_adopters[0].company == "Acme AI Lab"
     assert "AI Program Manager" in dossier.preceding_titles
     assert "Workflow design" in dossier.competencies
+
+
+def test_build_dossier_metadata_uses_early_mover_dates_and_locations() -> None:
+    trend = make_trend().model_copy(update={
+        "early_movers": [
+            EarlyMoverSignal(
+                company="Acme AI Lab",
+                date_label="April 2026",
+                location_label="Austin, TX",
+                posted_at=datetime(2026, 4, 19, tzinfo=timezone.utc),
+                scraped_at=datetime(2026, 4, 20, tzinfo=timezone.utc),
+            )
+        ]
+    })
+
+    dossier = build_dossier_metadata(trend, rank=1)
+
+    assert dossier.early_adopters[0].date_label == "April 2026"
+    assert dossier.early_adopters[0].location_label == "Austin, TX"
 
 
 def test_cross_sector_archive_metadata() -> None:

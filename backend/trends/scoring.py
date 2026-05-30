@@ -1,8 +1,8 @@
 from collections.abc import Iterable
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from backend.trends.models import TrendPostingRow, TrendResult, TrendScores
+from backend.trends.models import EarlyMoverSignal, TrendPostingRow, TrendResult, TrendScores
 
 INDUSTRY_KEYS = ("industry", "industries", "company_industry", "companyIndustry", "sector", "category")
 
@@ -22,6 +22,27 @@ def extract_industries(raw: dict[str, Any]) -> set[str]:
                 if isinstance(item, str) and item.strip():
                     industries.add(item.strip())
     return industries
+
+
+def _parse_posted_at(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    try:
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _date_label(value: datetime) -> str:
+    return value.strftime("%B %Y")
 
 
 def score_title_group(rows: Iterable[TrendPostingRow], now: datetime) -> TrendResult:
@@ -49,13 +70,25 @@ def score_title_group(rows: Iterable[TrendPostingRow], now: datetime) -> TrendRe
     scores = TrendScores(newness=newness, velocity=velocity, concentration=concentration)
     trend_score = round((scores.newness * 0.40) + (scores.velocity * 0.35) + (scores.concentration * 0.25), 4)
 
-    early_movers: list[str] = []
+    early_mover_companies: list[str] = []
+    early_movers: list[EarlyMoverSignal] = []
     seen_companies: set[str] = set()
     for row in eligible_rows:
         if row.company and row.company not in seen_companies:
             seen_companies.add(row.company)
-            early_movers.append(row.company)
-        if len(early_movers) == 3:
+            early_mover_companies.append(row.company)
+            posted_at = _parse_posted_at(row.posted_at)
+            signal_date = posted_at or row.scraped_at
+            early_movers.append(
+                EarlyMoverSignal(
+                    company=row.company,
+                    date_label=_date_label(signal_date),
+                    location_label=row.location or "Remote",
+                    posted_at=posted_at,
+                    scraped_at=row.scraped_at,
+                )
+            )
+        if len(early_mover_companies) == 3:
             break
 
     first_row = ordered_rows[0]
@@ -68,5 +101,6 @@ def score_title_group(rows: Iterable[TrendPostingRow], now: datetime) -> TrendRe
         total_count=len(ordered_rows),
         scores=scores,
         trend_score=trend_score,
-        early_mover_companies=early_movers,
+        early_mover_companies=early_mover_companies,
+        early_movers=early_movers,
     )

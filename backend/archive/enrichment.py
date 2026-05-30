@@ -237,13 +237,13 @@ def _sector_density(metadata: ArchiveEditorialMetadata) -> list[SectorDensity]:
 
 
 def _early_adopters(trend: TrendResult) -> list[EarlyAdopter]:
+    if trend.early_movers:
+        return [
+            EarlyAdopter(company=mover.company, date_label=mover.date_label, location_label=mover.location_label)
+            for mover in trend.early_movers[:5]
+        ]
     companies = trend.early_mover_companies or ["Unattributed early mover"]
-    labels = ["MAY 2026", "JUNE 2026", "JULY 2026", "AUGUST 2026", "SEPTEMBER 2026"]
-    locations = ["San Francisco, CA", "New York, NY", "London, UK", "Singapore", "Remote"]
-    return [
-        EarlyAdopter(company=company, date_label=labels[index % len(labels)], location_label=locations[index % len(locations)])
-        for index, company in enumerate(companies[:5])
-    ]
+    return [EarlyAdopter(company=company, date_label="Date unavailable", location_label="Remote") for company in companies[:5]]
 
 
 def build_record_metadata(trend: TrendResult, rank: int, metadata: ArchiveEditorialMetadata | None = None) -> ArchiveRecord:

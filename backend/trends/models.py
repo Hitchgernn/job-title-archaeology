@@ -10,9 +10,18 @@ class TrendPostingRow(BaseModel):
     display_title: str
     token_key: str
     company: str | None = None
+    location: str | None = None
     scraped_at: datetime
     posted_at: str | None = None
     raw: dict[str, Any] = Field(default_factory=dict)
+
+
+class EarlyMoverSignal(BaseModel):
+    company: str
+    date_label: str
+    location_label: str
+    posted_at: datetime | None = None
+    scraped_at: datetime
 
 
 class WeeklyCount(BaseModel):
@@ -36,3 +45,4 @@ class TrendResult(BaseModel):
     scores: TrendScores
     trend_score: float
     early_mover_companies: list[str] = Field(default_factory=list)
+    early_movers: list[EarlyMoverSignal] = Field(default_factory=list)

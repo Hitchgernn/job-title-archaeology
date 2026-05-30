@@ -22,6 +22,7 @@ def fetch_trend_posting_rows(connection, source: str | None = None) -> list[Tren
         normalized_titles.display_title,
         normalized_titles.token_key,
         raw_job_postings.company,
+        raw_job_postings.location,
         raw_job_postings.scraped_at,
         raw_job_postings.posted_at,
         raw_job_postings.raw

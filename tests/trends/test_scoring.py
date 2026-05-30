@@ -62,6 +62,8 @@ def test_score_title_group_scores_recent_only_title_high() -> None:
             display_title="AI Workflow Architect",
             token_key="ai|architect|workflow",
             company="Globex",
+            location="Remote",
+            posted_at="2026-05-20T12:00:00+00:00",
             scraped_at=datetime(2026, 5, 21, tzinfo=timezone.utc),
             raw={"industry": "Healthcare"},
         ),
@@ -76,6 +78,9 @@ def test_score_title_group_scores_recent_only_title_high() -> None:
     assert result.scores.concentration == 0.4
     assert result.trend_score == 0.85
     assert result.early_mover_companies == ["Globex", "Acme"]
+    assert result.early_movers[0].company == "Globex"
+    assert result.early_movers[0].date_label == "May 2026"
+    assert result.early_movers[0].location_label == "Remote"
 
 
 def test_score_title_group_uses_prior_baseline() -> None:
