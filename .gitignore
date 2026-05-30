@@ -17,3 +17,4 @@ configs/*
 !configs/brightdata_jobs.yaml
 docs
 test.html
+presentation_prompt.md
