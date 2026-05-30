@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { fetchArchiveDossier, fetchArchiveTitles, fetchCompanies, fetchCompanyDossier } from './api'
 import jobMarketImage from './assets/archive-images/job-market-1.png'
+import mastheadLogo from './assets/logos/logo-page.png'
 import type {
   AdoptionPoint,
   ArchiveRecord,
@@ -67,7 +68,9 @@ function Masthead({ active, onArchive, onCompanies }: { active: 'archive' | 'com
     <header className="masthead">
       <div className="masthead-top">
         <span>{TODAY}</span>
-        <button type="button" onClick={onArchive}>JOB TITLE ARCHAEOLOGY</button>
+        <button className="masthead-logo-button" type="button" onClick={onArchive} aria-label="Job Title Archaeology">
+          <img src={mastheadLogo} alt="Job Title Archaeology" />
+        </button>
         <span>{EDITION}</span>
       </div>
       <nav className="masthead-nav" aria-label="Primary sections">

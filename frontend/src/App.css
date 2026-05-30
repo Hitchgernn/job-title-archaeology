@@ -74,16 +74,19 @@ button {
   text-align: right;
 }
 
-.masthead-top button {
+.masthead-logo-button {
   border: 0;
   background: transparent;
   cursor: pointer;
-  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
-  font-size: clamp(2.6rem, 6.5vw, 5.6rem);
-  font-weight: 800;
-  letter-spacing: -0.07em;
-  line-height: 0.9;
+  padding: 0;
   text-align: center;
+}
+
+.masthead-logo-button img {
+  display: block;
+  width: min(68vw, 900px);
+  max-height: 160px;
+  object-fit: contain;
 }
 
 .section-nav {
