@@ -119,15 +119,16 @@ def test_build_archive_response_uses_cached_image_path() -> None:
     assert response.records[0].image_path == path
 
 
-def test_build_archive_response_assigns_generated_images_by_rank() -> None:
-    trends = [make_trend(f"Role {index}", normalized_title_id=index) for index in range(1, 22)]
+def test_build_archive_response_assigns_title_named_generated_images() -> None:
+    response = build_archive_response([make_trend("AI Architect", normalized_title_id=45)])
 
-    response = build_archive_response(trends)
+    assert response.records[0].image_path == "/archive-generated/JTA-0045-AI-ARCHITECT.svg"
 
-    assert response.records[0].image_path == "/archive-generated/JTA-0001-AI-SOLUTIONS-ARCHITECT.png"
-    assert response.records[9].image_path == "/archive-generated/JTA-0010-CLINICAL-DATA-SCIENTIST-AI-TRAINER.png"
-    assert response.records[10].image_path == "/archive-generated/JTA-0001-AI-SOLUTIONS-ARCHITECT.png"
-    assert response.records[20].image_path == "/archive-generated/JTA-0001-AI-SOLUTIONS-ARCHITECT.png"
+
+def test_build_archive_response_uses_generic_image_after_named_set() -> None:
+    response = build_archive_response([make_trend("Unmapped Role", normalized_title_id=9000)])
+
+    assert response.records[0].image_path == "/archive-generated/JTA-GENERIC-ARCHIVE.svg"
 
 
 def test_build_dossier_response_uses_cached_metadata() -> None:

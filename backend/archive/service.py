@@ -5,22 +5,41 @@ from backend.archive.models import ArchiveEditorialMetadata, ArchiveResponse, Ar
 from backend.trends.models import TrendResult, WeeklyCount
 
 
-GENERATED_ARCHIVE_IMAGES = (
-    "/archive-generated/JTA-0001-AI-SOLUTIONS-ARCHITECT.png",
-    "/archive-generated/JTA-0002-PRINCIPAL-AI-ARCHITECT.png",
-    "/archive-generated/JTA-0003-CONSULTANT-PRODUCT-QUALITY-SAFETY-LIFE-SCIENCES-HEALTHCARE.png",
-    "/archive-generated/JTA-0004-DIRECTOR-RESPONSIBLE-AI-GOVERNANCE-COMPLIANCE-AIRLHV.png",
-    "/archive-generated/JTA-0005-SENIOR-DIRECTOR-HEAD-OF-CLINICAL-STATISTICAL-PROGRAMMING.png",
-    "/archive-generated/JTA-0006-AI-WORKFLOW-ARCHITECT.png",
-    "/archive-generated/JTA-0007-ASSOCIATE-DIRECTOR-MEDICAL-SAFETY-SCIENTIST.png",
-    "/archive-generated/JTA-0008-ATMOSPHERIC-SCIENTIST-AI-TRAINER.png",
-    "/archive-generated/JTA-0009-CLIMATE-SCIENTIST-AI-TRAINER.png",
-    "/archive-generated/JTA-0010-CLINICAL-DATA-SCIENTIST-AI-TRAINER.png",
-)
+NAMED_ARCHIVE_IMAGE_RECORD_IDS = {
+    "JTA-0045-AI-ARCHITECT",
+    "JTA-0035-AI-SOLUTIONS-ARCHITECT",
+    "JTA-1245-RELIABILITY-ENGINEER",
+    "JTA-0785-ELECTRICAL-ENGINEER",
+    "JTA-1425-LOGISTICS-COORDINATOR",
+    "JTA-0047-AI-ENGINEER",
+    "JTA-0672-PROPERTY-MANAGER",
+    "JTA-0029-CONSULTANT-PRODUCT-QUALITY-SAFETY-LIFE-SCIENCES-HEALTHCARE",
+    "JTA-2105-ENVIRONMENTAL-HEALTH-AND-SAFETY-SPECIALIST",
+    "JTA-0001-AI-WORKFLOW-ARCHITECT",
+    "JTA-0666-CONTROLS-AND-AUTOMATION-ENGINEER",
+    "JTA-1680-DATA-SCIENTIST",
+    "JTA-1352-DIRECTOR-OPERATIONS",
+    "JTA-0248-AUTOMATION-TECHNICIAN",
+    "JTA-2078-CONTROLS-ENGINEER",
+    "JTA-0099-DIRECTOR-RESPONSIBLE-AI-GOVERNANCE-COMPLIANCE",
+    "JTA-0051-SENIOR-DIRECTOR-HEAD-OF-CLINICAL-STATISTICAL-PROGRAMMING",
+    "JTA-1576-SOFTWARE-ENGINEER",
+    "JTA-0026-ASSOCIATE-DIRECTOR-MEDICAL-SAFETY",
+    "JTA-0653-AUTOMATION-ENGINEER-CONTRACT",
+    "JTA-0038-AI-AND-AUTOMATION-ENGINEER",
+    "JTA-0092-ATMOSPHERIC-SCIENTIST-AI-TRAINER",
+    "JTA-0044-CLIMATE-SCIENTIST-AI-TRAINER",
+    "JTA-0043-CLINICAL-DATA-SCIENTIST-AI-TRAINER",
+    "JTA-2106-ENVIRONMENTAL-SCIENTIST",
+}
+
+GENERIC_ARCHIVE_IMAGE = "/archive-generated/JTA-GENERIC-ARCHIVE.svg"
 
 
-def image_for_rank(rank: int) -> str:
-    return GENERATED_ARCHIVE_IMAGES[(rank - 1) % len(GENERATED_ARCHIVE_IMAGES)]
+def image_for_record_id(record_id: str) -> str:
+    if record_id in NAMED_ARCHIVE_IMAGE_RECORD_IDS:
+        return f"/archive-generated/{record_id}.svg"
+    return GENERIC_ARCHIVE_IMAGE
 
 
 def build_archive_response(trends: list[TrendResult], metadata_by_title_id: dict[int, ArchiveEditorialMetadata] | None = None) -> ArchiveResponse:
@@ -29,7 +48,7 @@ def build_archive_response(trends: list[TrendResult], metadata_by_title_id: dict
     for index, trend in enumerate(trends, start=1):
         record = build_record_metadata(trend, rank=index, metadata=metadata_by_title_id.get(trend.normalized_title_id))
         if record.image_path is None:
-            record = record.model_copy(update={"image_path": image_for_rank(index)})
+            record = record.model_copy(update={"image_path": image_for_record_id(record.record_id)})
         records.append(record)
     category_counts = dict(Counter(record.category for record in records))
     return ArchiveResponse(
@@ -65,7 +84,7 @@ def build_dossier_response(
             serp_signals=serp_signals_by_title_id.get(trend.normalized_title_id),
         )
         if dossier.image_path is None:
-            dossier = dossier.model_copy(update={"image_path": image_for_rank(index)})
+            dossier = dossier.model_copy(update={"image_path": image_for_record_id(dossier.record_id)})
         if dossier.record_id == record_id:
             return dossier
     return None
