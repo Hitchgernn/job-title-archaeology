@@ -12,4 +12,9 @@ describe('App CSS', () => {
   it('uses full-width archive result layout without the removed image column', () => {
     expect(appCss).not.toContain('grid-template-columns: 132px minmax(0, 1fr)')
   })
+
+  it('keeps the landing signal strip moving like the reference', () => {
+    expect(appCss).toContain('@keyframes landing-ticker')
+    expect(appCss).toContain('animation: landing-ticker 30s linear infinite;')
+  })
 })

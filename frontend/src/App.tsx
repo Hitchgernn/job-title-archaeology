@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { fetchArchiveDossier, fetchArchiveTitles, fetchCompanies, fetchCompanyDossier } from './api'
 import jobMarketImage from './assets/archive-images/job-market-1.png'
+import landingImage from './assets/archive-images/landing-page.png'
 import type {
   AdoptionPoint,
   ArchiveRecord,
@@ -22,6 +23,7 @@ const BROAD_CATEGORIES = ['TECH', 'FINANCE', 'HEALTHCARE', 'MANUFACTURING', 'PUB
 const TODAY = new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())
 
 type View =
+  | { name: 'landing' }
   | { name: 'archive' }
   | { name: 'dossier'; recordId: string }
   | { name: 'companies' }
@@ -34,16 +36,17 @@ function viewFromHash(): View {
   const companyMatch = hash.match(/^#\/companies\/(.+)$/)
   if (companyMatch) return { name: 'company', key: decodeURIComponent(companyMatch[1]) }
   if (hash === '#/companies' || hash.startsWith('#/companies?')) return { name: 'companies' }
-  return { name: 'archive' }
+  if (hash === '#/archive' || hash.startsWith('#/archive?')) return { name: 'archive' }
+  return { name: 'landing' }
 }
 
 function archivePageFromHash() {
-  const match = window.location.hash.match(/^#\/\?page=(\d+)$/)
+  const match = window.location.hash.match(/^#\/archive\?page=(\d+)$/)
   return match ? Math.max(Number(match[1]) - 1, 0) : 0
 }
 
 function pushArchivePage(page: number) {
-  window.location.hash = page === 0 ? '#/' : `#/?page=${page + 1}`
+  window.location.hash = page === 0 ? '#/archive' : `#/archive?page=${page + 1}`
 }
 
 function pushView(view: View) {
@@ -59,15 +62,29 @@ function pushView(view: View) {
     window.location.hash = '#/companies'
     return
   }
+  if (view.name === 'archive') {
+    window.location.hash = '#/archive'
+    return
+  }
   window.location.hash = '#/'
 }
 
-function Masthead({ active, onArchive, onCompanies }: { active: 'archive' | 'companies'; onArchive: () => void; onCompanies: () => void }) {
+function Masthead({
+  active,
+  onHome,
+  onArchive,
+  onCompanies,
+}: {
+  active: 'landing' | 'archive' | 'companies'
+  onHome: () => void
+  onArchive: () => void
+  onCompanies: () => void
+}) {
   return (
     <header className="masthead">
       <div className="masthead-top">
         <span>{TODAY}</span>
-        <button type="button" onClick={onArchive}>JOB TITLE ARCHAEOLOGY</button>
+        <button type="button" onClick={onHome}>JOB TITLE ARCHAEOLOGY</button>
         <span>{EDITION}</span>
       </div>
       <nav className="masthead-nav" aria-label="Primary sections">
@@ -152,6 +169,90 @@ function downloadArchiveCsv(records: ArchiveRecord[]) {
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+}
+
+function LandingPage({ onArchive, onCompanies }: { onArchive: () => void; onCompanies: () => void }) {
+  const tickerItems = ['AI Workflow Architect', 'LLM Reliability Engineer', 'Climate Risk Modeler', 'Clinical AI Safety Officer', 'Robotics Fleet Coordinator']
+  return (
+    <>
+      <section className="landing-hero" aria-labelledby="landing-title">
+        <article className="landing-hero-copy">
+          <h1 id="landing-title">The Job Titles Nobody’s Talking About Yet Are the Ones That Matter Most.</h1>
+          <p>
+            Job Title Archaeology turns Bright Data hiring snapshots into searchable signals: emerging titles,
+            early adopter companies, velocity scores, dossiers, and field reports.
+          </p>
+          <div className="landing-actions" aria-label="Landing actions">
+            <button type="button" onClick={onArchive}>Enter the Archive <span aria-hidden="true">→</span></button>
+            <button type="button" onClick={onCompanies}>Read Field Reports</button>
+          </div>
+        </article>
+        <aside className="landing-plate" aria-label="Method specimen">
+          <span className="landing-fig">FIG. 1</span>
+          <img src={landingImage} alt="Dashboard preview showing early signal job title detection" />
+          <div>
+            <span>Source: archive DB</span>
+            <span>Bright Data pipeline</span>
+          </div>
+        </aside>
+      </section>
+
+      <section className="landing-signal-strip" id="signals" aria-label="Emerging title signals">
+        <div className="landing-ticker">
+          {[...tickerItems, ...tickerItems].map((item, index) => (
+            <span key={`${item}-${index}`}><b>▲</b> {item}</span>
+          ))}
+        </div>
+      </section>
+
+      <section className="landing-method" id="how-it-works">
+        <div className="landing-section-heading">
+          <span>Methodology</span>
+          <h2>Excavating Intent Through Syntax</h2>
+        </div>
+        <div className="landing-method-grid">
+          <article>
+            <span>01.</span>
+            <h3>Ingestion</h3>
+            <p>Bright Data Web Scraper snapshots capture Indeed and LinkedIn job postings into the raw archive.</p>
+          </article>
+          <article>
+            <span>02.</span>
+            <h3>Semantic Extraction</h3>
+            <p>Rule-based normalization strips location noise, IDs, shift markers, and duplicate title variants.</p>
+          </article>
+          <article>
+            <span>03.</span>
+            <h3>Dossier Compilation</h3>
+            <p>Trend scoring, company velocity, SERP signals, and optional Gemini metadata become readable dossiers.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="landing-strategy" id="pipeline">
+        <article className="landing-strategy-copy">
+          <div className="landing-section-heading">
+            <span>Strategic Application</span>
+            <h2>Mapping Strategy via Taxonomy</h2>
+          </div>
+          <p>
+            A job title is a hiring commitment. When companies name new operating roles, they reveal where budgets,
+            controls, automation, and talent strategy are moving before standard reports catch up.
+          </p>
+          <blockquote>
+            “The archive turns messy postings into evidence you can inspect, export, and challenge.”
+          </blockquote>
+        </article>
+        <div className="landing-signal-table">
+          <div className="landing-table-head"><span>Detected Signal (Syntax)</span><span>Enterprise Translation</span></div>
+          <div><strong>“AI Workflow Architect”</strong><span>AI tools become operating infrastructure, not side experiments.</span></div>
+          <div><strong>“Climate Risk Modeler”</strong><span>Portfolio and insurance teams operationalize climate exposure work.</span></div>
+          <div><strong>“Clinical AI Safety Officer”</strong><span>Healthcare AI adoption needs accountable safety governance.</span></div>
+          <div><strong>“Robotics Fleet Coordinator”</strong><span>Warehouses and factories manage automation as fleets.</span></div>
+        </div>
+      </section>
+    </>
+  )
 }
 
 function ArchiveResult({ record, onOpen }: { record: ArchiveRecord; onOpen: (recordId: string) => void }) {
@@ -577,7 +678,7 @@ export default function App() {
   const [companyDossier, setCompanyDossier] = useState<CompanyDossierResponse | null>(null)
   const [view, setView] = useState<View>(() => viewFromHash())
   const [error, setError] = useState<string | null>(null)
-  const [archiveReturnHash, setArchiveReturnHash] = useState('#/')
+  const [archiveReturnHash, setArchiveReturnHash] = useState('#/archive')
 
   useEffect(() => {
     const syncView = () => setView(viewFromHash())
@@ -616,6 +717,9 @@ export default function App() {
   }, [view])
 
   const currentView = useMemo(() => {
+    if (view.name === 'landing') {
+      return <LandingPage onArchive={() => pushView({ name: 'archive' })} onCompanies={() => pushView({ name: 'companies' })} />
+    }
     if (error) return <StatePanel>Archive feed interrupted · {error}</StatePanel>
     if (view.name === 'dossier') {
       if (!archive) return <StatePanel>Opening archive...</StatePanel>
@@ -632,17 +736,23 @@ export default function App() {
     }
     if (!archive) return <StatePanel>Opening archive...</StatePanel>
     return <ArchivePage data={archive} onOpen={(recordId) => {
-      setArchiveReturnHash(window.location.hash || '#/')
+      setArchiveReturnHash(window.location.hash || '#/archive')
       pushView({ name: 'dossier', recordId })
     }} />
   }, [archive, archiveReturnHash, dossier, companies, companyDossier, error, view])
 
-  const activeSection: 'archive' | 'companies' = view.name === 'companies' || view.name === 'company' ? 'companies' : 'archive'
+  const activeSection: 'landing' | 'archive' | 'companies' =
+    view.name === 'companies' || view.name === 'company'
+      ? 'companies'
+      : view.name === 'archive' || view.name === 'dossier'
+        ? 'archive'
+        : 'landing'
 
   return (
     <main className="archive-shell">
       <Masthead
         active={activeSection}
+        onHome={() => pushView({ name: 'landing' })}
         onArchive={() => pushView({ name: 'archive' })}
         onCompanies={() => pushView({ name: 'companies' })}
       />

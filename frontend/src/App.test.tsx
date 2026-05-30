@@ -50,8 +50,50 @@ afterEach(() => {
 })
 
 describe('App', () => {
+  it('renders landing page by default', () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => archivePayload }))
+
+    render(<App />)
+
+    expect(screen.getByRole('heading', { name: /the job titles nobody/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /enter the archive/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /read field reports/i })).toBeInTheDocument()
+    expect(screen.getAllByText(/ai workflow architect/i).length).toBeGreaterThan(0)
+    expect(screen.getByText(/bright data pipeline/i)).toBeInTheDocument()
+  })
+
+  it('opens archive from landing CTA', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => archivePayload }))
+
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /enter the archive/i }))
+
+    await screen.findByPlaceholderText('Search the Archive')
+    expect(window.location.hash).toBe('#/archive')
+  })
+
+  it('opens field reports from landing CTA', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => archivePayload })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          companies: [],
+          summary: { tracked_count: 0, total_recent_hires: 0, last_computed_at: null },
+        }),
+      })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /read field reports/i }))
+
+    await screen.findByText(/no company signals computed yet/i)
+    expect(window.location.hash).toBe('#/companies')
+  })
+
   it('renders loading state without decorative masthead categories', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
+    window.location.hash = '#/archive'
 
     render(<App />)
 
@@ -70,6 +112,7 @@ describe('App', () => {
 
   it('does not render archive record image on the list page', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => archivePayload }))
+    window.location.hash = '#/archive'
 
     render(<App />)
 
@@ -83,6 +126,7 @@ describe('App', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => archivePayload })
       .mockResolvedValueOnce({ ok: true, json: async () => dossierPayload })
     vi.stubGlobal('fetch', fetchMock)
+    window.location.hash = '#/archive'
 
     render(<App />)
     fireEvent.click(await screen.findByRole('button', { name: 'AI Workflow Architect' }))
@@ -109,6 +153,7 @@ describe('App', () => {
         },
       }),
     }))
+    window.location.hash = '#/archive'
 
     render(<App />)
 
@@ -149,6 +194,7 @@ describe('App', () => {
         },
       }),
     }))
+    window.location.hash = '#/archive'
     const createObjectURL = vi.fn(() => 'blob:archive-csv')
     const revokeObjectURL = vi.fn()
     vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL })
@@ -184,6 +230,7 @@ describe('App', () => {
 
   it('disables CSV export when filters match no records', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => archivePayload }))
+    window.location.hash = '#/archive'
 
     render(<App />)
     await screen.findByRole('button', { name: 'AI Workflow Architect' })
@@ -202,7 +249,7 @@ describe('App', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ ...archivePayload, records }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ ...dossierPayload, ...records[3] }) })
     vi.stubGlobal('fetch', fetchMock)
-    window.location.hash = '#/?page=2'
+    window.location.hash = '#/archive?page=2'
 
     render(<App />)
     fireEvent.click(await screen.findByRole('button', { name: 'Record 4' }))
@@ -218,6 +265,7 @@ describe('App', () => {
       ok: true,
       json: async () => ({ records: [], summary: { total_records: 0, category_counts: {}, era_density: [] } }),
     }))
+    window.location.hash = '#/archive'
 
     render(<App />)
 
@@ -226,6 +274,7 @@ describe('App', () => {
 
   it('renders error state', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }))
+    window.location.hash = '#/archive'
 
     render(<App />)
 
