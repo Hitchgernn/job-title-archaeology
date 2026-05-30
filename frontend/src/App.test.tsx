@@ -59,14 +59,13 @@ describe('App', () => {
     expect(screen.queryByLabelText('Archive sections')).not.toBeInTheDocument()
   })
 
-  it('renders masthead logo as home button', async () => {
+  it('renders text masthead as home button without logo image', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => archivePayload }))
 
     render(<App />)
 
-    const logo = await screen.findByAltText('Job Title Archaeology')
-    expect(logo).toHaveAttribute('src', expect.stringContaining('logo-page'))
-    expect(screen.getByRole('button', { name: 'Job Title Archaeology' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'JOB TITLE ARCHAEOLOGY' })).toBeInTheDocument()
+    expect(screen.queryByAltText('Job Title Archaeology')).not.toBeInTheDocument()
   })
 
   it('does not render archive record image on the list page', async () => {
