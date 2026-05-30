@@ -56,6 +56,23 @@ def test_search_returns_empty_list_when_no_organic_results() -> None:
     assert hits == []
 
 
+def test_search_url_encodes_complex_query_for_bright_data() -> None:
+    query = '"AI Architect" hiring announcement OR press release -site:indeed.com -site:linkedin.com'
+
+    with patch("backend.serp.client.httpx.post") as mock_post:
+        mock_post.return_value.is_success = True
+        mock_post.return_value.json.return_value = {"organic": []}
+        client = BrightDataSerpClient(api_token="test-token", zone="serp_api1")
+        client.search(query)
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["url"] == (
+        "https://www.google.com/search?"
+        "q=%22AI+Architect%22+hiring+announcement+OR+press+release+"
+        "-site%3Aindeed.com+-site%3Alinkedin.com&brd_json=1"
+    )
+
+
 def test_search_raises_on_http_error() -> None:
     with patch("backend.serp.client.httpx.post") as mock_post:
         mock_post.return_value.is_success = False

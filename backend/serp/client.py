@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 
 import httpx
 
@@ -31,9 +31,10 @@ class BrightDataSerpClient:
         return host.removeprefix("www.")
 
     def search(self, query: str, limit: int = 5) -> list[SerpHit]:
+        google_query = urlencode({"q": query, "brd_json": "1"})
         payload: dict[str, Any] = {
             "zone": self.zone,
-            "url": f"https://www.google.com/search?q={query}&brd_json=1",
+            "url": f"https://www.google.com/search?{google_query}",
             "format": "json",
         }
         headers = {
