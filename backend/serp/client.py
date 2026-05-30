@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlencode, urlparse
@@ -49,6 +50,8 @@ class BrightDataSerpClient:
         data = response.json()
         if isinstance(data, dict) and "body" in data:
             body = data.get("body")
+            if isinstance(body, str):
+                body = json.loads(body)
             if isinstance(body, dict):
                 data = body
         organic = []

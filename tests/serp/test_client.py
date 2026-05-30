@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from unittest.mock import patch
 
@@ -71,6 +72,30 @@ def test_search_url_encodes_complex_query_for_bright_data() -> None:
         "q=%22AI+Architect%22+hiring+announcement+OR+press+release+"
         "-site%3Aindeed.com+-site%3Alinkedin.com&brd_json=1"
     )
+
+
+def test_search_decodes_bright_data_body_json_string() -> None:
+    payload = {
+        "body": json.dumps(
+            {
+                "organic": [
+                    {"title": "AI Architect hiring", "link": "https://example.com/ai", "description": "Hiring news."}
+                ]
+            }
+        ),
+        "status_code": 200,
+    }
+
+    with patch("backend.serp.client.httpx.post") as mock_post:
+        mock_post.return_value.is_success = True
+        mock_post.return_value.json.return_value = payload
+        client = BrightDataSerpClient(api_token="test-token", zone="serp_api1")
+        hits = client.search("AI Architect")
+
+    assert len(hits) == 1
+    assert hits[0].title == "AI Architect hiring"
+    assert hits[0].url == "https://example.com/ai"
+    assert hits[0].snippet == "Hiring news."
 
 
 def test_search_raises_on_http_error() -> None:
