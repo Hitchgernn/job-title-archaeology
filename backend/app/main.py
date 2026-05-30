@@ -19,7 +19,15 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-_FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_FRONTEND_DIST = _PROJECT_ROOT / "frontend" / "dist"
+_ARCHIVE_GENERATED = _FRONTEND_DIST / "archive-generated"
+if not _ARCHIVE_GENERATED.exists():
+    _ARCHIVE_GENERATED = _PROJECT_ROOT / "frontend" / "public" / "archive-generated"
+
+if _ARCHIVE_GENERATED.exists():
+    app.mount("/archive-generated", StaticFiles(directory=_ARCHIVE_GENERATED), name="archive-generated")
+
 if _FRONTEND_DIST.exists():
     app.mount("/assets", StaticFiles(directory=_FRONTEND_DIST / "assets"), name="frontend-assets")
 

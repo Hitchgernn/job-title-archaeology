@@ -21,6 +21,13 @@ def make_trend(title: str = "AI Workflow Architect", normalized_title_id: int = 
     )
 
 
+def test_archive_generated_assets_are_served_as_static_files() -> None:
+    response = client.get("/archive-generated/JTA-0045-AI-ARCHITECT.svg")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("image/svg+xml")
+
+
 def test_archive_titles_returns_records() -> None:
     connection = MagicMock()
     with patch("backend.archive.router.open_connection", return_value=connection), patch(
