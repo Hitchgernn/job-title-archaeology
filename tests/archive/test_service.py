@@ -119,6 +119,17 @@ def test_build_archive_response_uses_cached_image_path() -> None:
     assert response.records[0].image_path == path
 
 
+def test_build_archive_response_assigns_generated_images_by_rank() -> None:
+    trends = [make_trend(f"Role {index}", normalized_title_id=index) for index in range(1, 22)]
+
+    response = build_archive_response(trends)
+
+    assert response.records[0].image_path == "/archive-generated/JTA-0001-AI-SOLUTIONS-ARCHITECT.png"
+    assert response.records[9].image_path == "/archive-generated/JTA-0010-CLINICAL-DATA-SCIENTIST-AI-TRAINER.png"
+    assert response.records[10].image_path == "/archive-generated/JTA-0001-AI-SOLUTIONS-ARCHITECT.png"
+    assert response.records[20].image_path == "/archive-generated/JTA-0001-AI-SOLUTIONS-ARCHITECT.png"
+
+
 def test_build_dossier_response_uses_cached_metadata() -> None:
     dossier = build_dossier_response([make_trend()], "JTA-0010-AI-WORKFLOW-ARCHITECT", {10: make_metadata()})
 
